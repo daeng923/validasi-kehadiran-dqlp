@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validasi Kehadiran DQLP</title>
+
+<style>
+:root{
+  --primary:#0f5132;
+  --card:#ffffff;
+  --text:#2f2f2f;
+  --muted:#777;
+  --border:#e1e5e4;
+  --danger:#b02a37;
+  --soft:#f1f6f4;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:"Segoe UI", Arial, sans-serif;
+  background:linear-gradient(135deg,#eaf5ef,#f7faf9);
+  padding:24px 14px;
+  color:var(--text);
+}
+
+.container{max-width:480px;margin:auto}
+
+.card{
+  background:var(--card);
+  border-radius:20px;
+  padding:22px 20px 24px;
+  box-shadow:0 20px 50px rgba(0,0,0,.12);
+}
+
+/* HEADER */
+.header{text-align:center;margin-bottom:18px}
+.header h2{margin:0;font-size:20px;color:var(--primary)}
+.header p{margin:6px 0 0;font-size:13px;color:var(--muted)}
+
+/* INFO */
+.info{
+  background:var(--soft);
+  border-left:4px solid var(--primary);
+  padding:14px 16px;
+  border-radius:14px;
+  font-size:13px;
+  margin-bottom:14px;
+}
+
+/* INPUT & BUTTON */
+input, select, button{
+  width:100%;
+  padding:13px 15px;
+  margin-top:10px;
+  border-radius:14px;
+  font-size:14px;
+}
+input, select{border:1px solid var(--border)}
+input:focus, select:focus{outline:none;border-color:var(--primary)}
+
+button{
+  border:none;
+  background:var(--primary);
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+}
+button:disabled{
+  background:#9fbcb2;
+  cursor:not-allowed;
+}
+
+/* LIST */
+.list{
+  margin-top:14px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+}
+.item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+}
+.item:last-child{border-bottom:none}
+
+.item input{width:20px;height:20px}
+.item img{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  object-fit:cover;
+  border:1px solid #ccc;
+}
+.item .nama{font-weight:600;font-size:14px}
+.item .nip{font-size:12px;color:var(--muted)}
+
+/* COUNTER */
+.counter{
+  margin-top:10px;
+  font-size:13px;
+  color:#444;
+}
+
+/* LOADING */
+.loading{
+  display:none;
+  margin-top:10px;
+  font-size:13px;
+  color:var(--muted);
+  text-align:center;
+}
+.loading.show{display:block}
+
+/* TOAST */
+.toast{
+  display:none;
+  margin-top:14px;
+  padding:12px;
+  border-radius:12px;
+  background:#e7f3ee;
+  border:1px solid #b7d7cc;
+  font-size:13px;
+  text-align:center;
+}
+.toast.show{display:block}
+
+/* ERROR */
+.error{
+  margin-top:8px;
+  font-size:13px;
+  color:var(--danger);
+}
+
+/* FOOTER */
+.footer{
+  margin-top:18px;
+  font-size:11px;
+  color:var(--muted);
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <div class="card">
+
+    <div class="header">
+      <h2>Validasi Kehadiran DQLP</h2>
+      <p>Development of Quranic Literacy Program</p>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="loginBox">
+      <div class="info">
+        Silakan login menggunakan <b>email pengajar</b> dan
+        <b>token akses</b> dari admin.
+      </div>
+
+      <input id="email" type="email" placeholder="Email pengajar">
+      <input id="token" type="text" placeholder="Token akses">
+
+      <button id="btnLogin" onclick="login()">Masuk</button>
+      <div id="loadingLogin" class="loading">Memverifikasi login…</div>
+      <div id="loginMsg" class="error"></div>
+    </div>
+
+    <!-- VALIDASI -->
+    <div id="validasiBox" style="display:none">
+
+      <div class="info">
+        Hilangkan <b>tanda centang</b> pada peserta yang
+        <b>tidak hadir secara fisik</b> di ruang kelas.
+      </div>
+
+      <select id="skema"></select>
+      <select id="periode"></select>
+
+      <button id="btnLoad" onclick="loadData()">Tampilkan Peserta</button>
+      <div id="loadingData" class="loading">Memuat daftar peserta…</div>
+
+      <div id="counter" class="counter"></div>
+      <div id="list" class="list"></div>
+
+      <button id="btnSave" onclick="simpan()">Simpan Validasi</button>
+      <div id="loadingSave" class="loading">Menyimpan validasi…</div>
+
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <div class="footer">
+      Sistem validasi kehadiran DQLP
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyATVh1utkwPSW9MDGUco3b-uLUeL0cqEI52IuEW2RCD0idcEtS7coC7_U_DQUoz2PX/exec";
+
+let DATA = [];
+let EMAIL = "";
+
+/* UTIL */
+const show = id => document.getElementById(id).classList.add("show");
+const hide = id => document.getElementById(id).classList.remove("show");
+const disable = (id, v) => document.getElementById(id).disabled = v;
+
+/* LOGIN */
+async function login(){
+  const e = email.value.trim();
+  const t = token.value.trim();
+  loginMsg.textContent = "";
+
+  if(!e || !t){
+    loginMsg.textContent = "Email dan token wajib diisi";
+    return;
+  }
+
+  disable("btnLogin", true);
+  show("loadingLogin");
+
+  const r = await fetch(
+    API_URL +
+    "?action=login" +
+    "&email=" + encodeURIComponent(e) +
+    "&token=" + encodeURIComponent(t)
+  );
+  const j = await r.json();
+
+  hide("loadingLogin");
+  disable("btnLogin", false);
+
+  if(!j.status){
+    loginMsg.textContent = j.msg;
+    return;
+  }
+
+  EMAIL = e;
+  loginBox.style.display = "none";
+  validasiBox.style.display = "block";
+
+  skema.innerHTML = j.skema.map(s=>`<option>${s}</option>`).join("");
+
+  const p = await fetch(
+    API_URL + "?action=periode&email=" + encodeURIComponent(EMAIL)
+  ).then(r=>r.json());
+
+  periode.innerHTML = p.map(x=>`<option>${x}</option>`).join("");
+}
+
+/* LOAD DATA */
+async function loadData(){
+  list.innerHTML="";
+  counter.textContent="";
+  disable("btnLoad", true);
+  show("loadingData");
+
+  const r = await fetch(
+    API_URL +
+    "?action=list" +
+    "&email=" + encodeURIComponent(EMAIL) +
+    "&skema=" + encodeURIComponent(skema.value) +
+    "&periode=" + encodeURIComponent(periode.value)
+  );
+
+  DATA = await r.json();
+
+  hide("loadingData");
+  disable("btnLoad", false);
+
+  if(DATA.length === 0){
+    counter.textContent = "Tidak ada peserta yang perlu divalidasi.";
+    return;
+  }
+
+  list.innerHTML = DATA.map((r,i)=>`
+    <div class="item">
+      <input type="checkbox" checked data-i="${i}" onchange="updateCounter()">
+      <img src="${r.foto}">
+      <div>
+        <div class="nama">${r.nama}</div>
+        <div class="nip">${r.nip}</div>
+      </div>
+    </div>
+  `).join("");
+
+  updateCounter();
+}
+
+/* COUNTER */
+function updateCounter(){
+  const checked = document.querySelectorAll(".item input:checked").length;
+  counter.textContent = checked + " dari " + DATA.length + " peserta akan divalidasi";
+}
+
+/* SIMPAN */
+async function simpan(){
+  const rows=[];
+  document.querySelectorAll(".item input:checked").forEach(cb=>{
+    rows.push(DATA[cb.dataset.i]);
+  });
+
+  if(rows.length === 0){
+    showToast("Tidak ada peserta yang divalidasi.");
+    return;
+  }
+
+  disable("btnSave", true);
+  show("loadingSave");
+
+  const r = await fetch(
+    API_URL +
+    "?action=simpan" +
+    "&email=" + encodeURIComponent(EMAIL) +
+    "&skema=" + encodeURIComponent(skema.value) +
+    "&periode=" + encodeURIComponent(periode.value) +
+    "&rows=" + encodeURIComponent(JSON.stringify(rows))
+  );
+  const j = await r.json();
+
+  hide("loadingSave");
+  disable("btnSave", false);
+
+  list.innerHTML="";
+  counter.textContent="";
+  showToast(j.msg || "Validasi berhasil disimpan.");
+}
+
+/* TOAST */
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"), 3500);
+}
+</script>
+</body>
+</html>
