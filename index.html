@@ -280,6 +280,33 @@ async function simpanData() {
 }
 
 function logout() { location.reload(); }
+// --- KODE PROTEKSI TAMBAHAN ---
+
+// 1. Blokir Klik Kanan (Context Menu)
+document.addEventListener('contextmenu', event => event.preventDefault());
+
+// 2. Blokir Shortcut Keyboard untuk Inspeksi (DevTools)
+document.onkeydown = function(e) {
+    // Blokir F12
+    if(e.keyCode == 123) return false;
+    
+    // Blokir Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+U (View Source)
+    if(e.ctrlKey && (e.shiftKey || e.keyCode == 'U'.charCodeAt(0))) {
+        if(e.keyCode == 'I'.charCodeAt(0) || 
+           e.keyCode == 'J'.charCodeAt(0) || 
+           e.keyCode == 'C'.charCodeAt(0) || 
+           e.keyCode == 'U'.charCodeAt(0)) {
+            return false;
+        }
+    }
+}
+
+// 3. Mencegah Drag Gambar (Foto Peserta agar tidak mudah ditarik/save)
+document.addEventListener('dragstart', event => {
+    if (event.target.tagName === 'IMG') event.preventDefault();
+});
+
+// --- AKHIR KODE PROTEKSI ---
 </script>
 </body>
 </html>
