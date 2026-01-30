@@ -3,230 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validasi Kehadiran DQLP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: transparent !important; 
+            margin: 0; padding: 0; overflow-x: hidden;
+        }
         .spinner { border-top-color: #059669; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .select-none { -webkit-user-select: none; user-select: none; }
+        
+        /* Transition untuk elemen list */
+        .list-item { transition: all 0.2s ease; }
+        .list-item:hover { transform: translateY(-1px); }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800 select-none" oncontextmenu="return false;">
+<body class="select-none" oncontextmenu="return false;">
 
-    <div class="max-w-md mx-auto py-10 px-4">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-emerald-900 tracking-tighter">DQLP</h1>
-            <p class="text-slate-500 text-[10px] mt-1 uppercase tracking-[0.2em] font-bold">Validation System</p>
-        </div>
-
-        <div class="relative group">
-            <div class="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+    <div class="w-full max-w-2xl mx-auto px-2 pt-2 pb-8">
+        <div class="bg-white p-4 md:p-6 rounded-[2rem]">
             
-            <div class="relative bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/60 p-6 md:p-8 border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-emerald-600 to-blue-600"></div>
+            <div id="loginBox" class="space-y-6">
+                <div class="text-center mb-4">
+                    <h2 class="text-xl font-bold text-slate-800 tracking-tight">DQLP Validation System</h2>
+                    <div class="h-1 w-10 bg-emerald-500 mx-auto mt-2 rounded-full"></div>
+                </div>
 
-                <div id="loginBox" class="space-y-6 pt-4">
-                    <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-2xl">
-                        <p class="text-xs text-emerald-800 leading-relaxed font-medium">
-                            Masukkan <b>Email Pengajar</b> dan <b>Token Akses</b> untuk memvalidasi presensi peserta.
-                        </p>
+                <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-2xl">
+                    <p class="text-xs text-emerald-800 leading-relaxed font-medium">
+                        Masukkan <b>Email</b> dan <b>Token</b> harian untuk memvalidasi presensi.
+                    </p>
+                </div>
+                
+                <div class="space-y-4">
+                    <input id="email" type="email" placeholder="Email Pengajar" class="w-full px-5 py-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 outline-none text-sm">
+                    <input id="token" type="password" placeholder="Token Akses" class="w-full px-5 py-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 outline-none text-sm">
+                    <button id="btnLogin" onclick="login()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all text-sm tracking-wide">
+                        Verifikasi Akses
+                    </button>
+                </div>
+            </div>
+
+            <div id="mainBox" class="hidden space-y-6">
+                <div class="flex items-center justify-between bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div class="flex flex-col">
+                        <span class="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Akses Aktif</span>
+                        <div class="text-xs font-bold text-slate-600 truncate max-w-[150px]" id="userEmailDisplay"></div>
                     </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1 tracking-wider">Email Pengajar</label>
-                            <input id="email" type="email" placeholder="nama@umm.ac.id" 
-                                class="w-full px-5 py-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1 tracking-wider">Token Akses</label>
-                            <input id="token" type="password" placeholder="••••••••" 
-                                class="w-full px-5 py-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm">
-                        </div>
-                        <button id="btnLogin" onclick="login()" 
-                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-200 transition-all active:scale-[0.98] text-sm tracking-wide">
-                            Masuk Sekarang
-                        </button>
+                    <button onclick="location.reload()" class="px-3 py-1.5 rounded-lg text-[10px] font-bold text-red-400 hover:bg-red-50 transition-colors uppercase">Logout</button>
+                </div>
+
+                <div class="space-y-3">
+                    <select id="skema" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 font-semibold text-sm outline-none"></select>
+                    <button id="btnLoad" onclick="loadData()" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-3.5 rounded-2xl transition-all text-xs">
+                        Tampilkan Peserta
+                    </button>
+                </div>
+
+                <div id="filterContainer" class="hidden space-y-4 pt-4 border-t border-slate-50">
+                    <input id="searchBox" onkeyup="filterList()" type="text" placeholder="Cari nama peserta..." class="w-full px-4 py-3 text-xs rounded-xl border border-slate-100 bg-slate-50 outline-none">
+                    <div class="flex items-center justify-between px-1">
+                        <button onclick="toggleSelectAll()" id="btnSelectAll" class="text-[10px] font-bold text-emerald-600 hover:underline">Batalkan Semua</button>
+                        <div id="summaryBox"></div>
                     </div>
                 </div>
 
-                <div id="mainBox" class="hidden space-y-6 pt-2">
-                    <div class="flex items-center justify-between border-b border-slate-50 pb-4">
-                        <div class="flex flex-col">
-                            <span class="text-[9px] uppercase font-bold text-slate-300 tracking-widest">Pengajar</span>
-                            <div class="text-xs font-bold text-slate-600 truncate max-w-[150px]" id="userEmailDisplay"></div>
-                        </div>
-                        <button onclick="location.reload()" class="px-3 py-1.5 rounded-lg text-[10px] font-bold text-red-400 hover:bg-red-50 transition-colors uppercase tracking-tighter">Logout</button>
-                    </div>
+                <div id="loading" class="hidden text-center py-10">
+                    <div class="spinner w-8 h-8 border-[3px] border-slate-100 rounded-full mx-auto mb-3"></div>
+                </div>
 
-                    <div class="space-y-3">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase ml-1 tracking-wider text-center">Pilih Skema Program</label>
-                        <select id="skema" class="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-semibold text-slate-700 appearance-none"></select>
-                        <button id="btnLoad" onclick="loadData()" 
-                            class="w-full bg-slate-900 hover:bg-black text-white font-bold py-3.5 rounded-2xl transition-all shadow-md text-xs tracking-wide">
-                            Tampilkan Peserta
-                        </button>
-                    </div>
+                <div id="emptyBox"></div>
+                <div id="list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"></div>
 
-                    <div id="filterContainer" class="hidden space-y-4 pt-4 border-t border-slate-50">
-                        <div class="relative">
-                            <input id="searchBox" onkeyup="filterList()" type="text" placeholder="Cari nama peserta..." 
-                                class="w-full pl-10 pr-4 py-3 text-xs rounded-xl border border-slate-100 bg-slate-50 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all">
-                            <i class="fa-solid fa-magnifying-glass text-slate-300 absolute left-3.5 top-3.5 text-xs"></i>
-                        </div>
-                        <div class="flex items-center justify-between px-1">
-                            <button onclick="toggleSelectAll()" id="btnSelectAll" class="text-[10px] font-bold text-emerald-600 hover:underline">Batalkan Semua</button>
-                            <div id="summaryBox"></div>
-                        </div>
-                    </div>
-
-                    <div id="loading" class="hidden text-center py-10">
-                        <div class="spinner w-10 h-10 border-[3px] border-slate-100 rounded-full mx-auto mb-3"></div>
-                        <p class="text-xs text-slate-400 font-medium italic">Sedang memproses...</p>
-                    </div>
-
-                    <div id="emptyBox"></div>
-                    <div id="list" class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar"></div>
-
-                    <div class="pt-2">
-                        <button id="btnSave" onclick="confirmSave()" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-emerald-100 transition-all active:scale-[0.98] text-sm tracking-wide">
-                            Konfirmasi Kehadiran
-                        </button>
-                    </div>
+                <div class="pt-2">
+                    <button id="btnSave" onclick="confirmSave()" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-xl text-sm tracking-wide transition-all">
+                        Simpan Validasi Kehadiran
+                    </button>
                 </div>
             </div>
         </div>
-
-        <p class="text-center text-slate-300 text-[9px] mt-8 uppercase tracking-[0.3em] font-bold">
-            &copy; 2026 UMM - Quranic Literacy
-        </p>
     </div>
 
-    <div id="customAlert" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-[2px]">
+    <div id="customAlert" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
         <div class="bg-white rounded-[2rem] p-8 max-w-xs w-full shadow-2xl text-center">
-            <div id="alertIcon" class="mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-6"></div>
-            <h3 id="alertTitle" class="text-lg font-bold text-slate-800 mb-2"></h3>
-            <p id="alertMessage" class="text-xs text-slate-500 mb-8 leading-relaxed"></p>
-            <button onclick="closeAlert()" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest">Tutup</button>
+            <div id="alertIcon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+            <h3 id="alertTitle" class="text-md font-bold text-slate-800 mb-1"></h3>
+            <p id="alertMessage" class="text-[11px] text-slate-500 mb-6 leading-relaxed"></p>
+            <button onclick="closeAlert()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl text-[10px] uppercase tracking-widest">Tutup</button>
         </div>
     </div>
 
-    <div id="customConfirm" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-[2px]">
+    <div id="customConfirm" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
         <div class="bg-white rounded-[2rem] p-8 max-w-xs w-full shadow-2xl text-center">
-            <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-amber-100 mb-6 text-amber-600">
-                <i class="fa-solid fa-circle-question text-2xl"></i>
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 mb-4 text-amber-600">
+                <i class="fa-solid fa-question text-xl"></i>
             </div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">Simpan Validasi?</h3>
-            <p id="confirmMessage" class="text-xs text-slate-500 mb-8 leading-relaxed"></p>
+            <h3 class="text-md font-bold text-slate-800 mb-1">Konfirmasi Simpan?</h3>
+            <p id="confirmMessage" class="text-[11px] text-slate-500 mb-6 leading-relaxed"></p>
             <div class="flex gap-3">
-                <button onclick="closeConfirm()" class="flex-1 bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl text-xs">Batal</button>
-                <button id="confirmYesBtn" class="flex-1 bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-xs shadow-lg shadow-emerald-100">Ya, Simpan</button>
+                <button onclick="closeConfirm()" class="flex-1 bg-slate-100 text-slate-500 font-bold py-3 rounded-xl text-[10px]">Batal</button>
+                <button id="confirmYesBtn" class="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl text-[10px]">Simpan</button>
             </div>
         </div>
     </div>
 
 <script>
+// PASTIKAN URL API ANDA BENAR
 const API_URL = "https://script.google.com/macros/s/AKfycbz5tu40Iv18YUf4kJ8KYXp2THnsUmQ-PmRtLpAW3LGOqFwsdmaYV_3tKtaiKahyWZrgcA/exec";
 let EMAIL = "", DATA = [], IS_ALL_SELECTED = true;
 
 const $ = id => document.getElementById(id);
 
-// --- UTILS ---
 function showAlert(title, message, type = 'success') {
     const icon = $('alertIcon');
     $('alertTitle').innerText = title;
     $('alertMessage').innerText = message;
-    if (type === 'error') {
-        icon.className = "mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-red-100 text-red-600 mb-6";
-        icon.innerHTML = `<i class="fa-solid fa-xmark text-xl"></i>`;
-    } else {
-        icon.className = "mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-emerald-100 text-emerald-600 mb-6";
-        icon.innerHTML = `<i class="fa-solid fa-check text-xl"></i>`;
-    }
+    icon.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${type === 'error' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`;
+    icon.innerHTML = type === 'error' ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-check"></i>';
     $('customAlert').classList.remove('hidden');
 }
+
 function closeAlert() { $('customAlert').classList.add('hidden'); }
 function closeConfirm() { $('customConfirm').classList.add('hidden'); }
 
-// --- LOGIC ---
 async function login() {
     const e = $("email").value.trim(); const t = $("token").value.trim();
-    if(!e || !t) return showAlert("Opps!", "Email dan Token wajib diisi.", "error");
-    
-    $("btnLogin").disabled = true;
-    $("btnLogin").innerText = "Memproses...";
-
+    if(!e || !t) return showAlert("Opps!", "Data tidak lengkap.", "error");
+    $("btnLogin").disabled = true; $("btnLogin").innerText = "Proses...";
     try {
-        const response = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(e)}&token=${encodeURIComponent(t)}`);
-        const j = await response.json();
+        const r = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(e)}&token=${encodeURIComponent(t)}`);
+        const j = await r.json();
         if(!j.status) throw new Error(j.msg);
-        
-        EMAIL = j.email;
-        $("userEmailDisplay").innerText = EMAIL;
-        $("loginBox").classList.add("hidden");
-        $("mainBox").classList.remove("hidden");
+        EMAIL = j.email; $("userEmailDisplay").innerText = EMAIL;
+        $("loginBox").classList.add("hidden"); $("mainBox").classList.remove("hidden");
         $("skema").innerHTML = (j.skema || []).map(s => `<option value="${s}">${s}</option>`).join("");
     } catch (err) { showAlert("Gagal Login", err.message, "error"); }
-    finally { $("btnLogin").disabled = false; $("btnLogin").innerText = "Masuk Sekarang"; }
+    finally { $("btnLogin").disabled = false; $("btnLogin").innerText = "Verifikasi Akses"; }
 }
 
 async function loadData() {
-    $("btnLoad").disabled = true;
-    $("loading").classList.remove("hidden");
-    $("list").innerHTML = ""; $("emptyBox").innerHTML = ""; $("btnSave").classList.add("hidden");
-    $("filterContainer").classList.add("hidden");
-
+    $("btnLoad").disabled = true; $("loading").classList.remove("hidden");
+    $("list").innerHTML = ""; $("btnSave").classList.add("hidden");
     try {
         const r = await fetch(`${API_URL}?action=list&email=${encodeURIComponent(EMAIL)}&skema=${encodeURIComponent($("skema").value)}`);
         DATA = await r.json();
-
         if(DATA.length === 0) {
-            $("emptyBox").innerHTML = `<div class="p-6 bg-slate-50 text-slate-400 text-[11px] rounded-[2rem] border border-dashed border-slate-200 text-center">Tidak ada data untuk divalidasi.</div>`;
+            $("emptyBox").innerHTML = `<div class="p-6 text-slate-400 text-xs text-center italic">Tidak ada antrean baru.</div>`;
         } else {
-            $("filterContainer").classList.remove("hidden");
-            $("btnSave").classList.remove("hidden");
-            renderList(DATA);
-            updateSummary();
+            $("filterContainer").classList.remove("hidden"); $("btnSave").classList.remove("hidden");
+            renderList(DATA); updateSummary();
         }
-    } catch (err) { showAlert("Error", "Gagal sinkronisasi data.", "error"); }
+    } catch (err) { showAlert("Error", "Gagal sinkronisasi.", "error"); }
     finally { $("loading").classList.add("hidden"); $("btnLoad").disabled = false; }
+}
+
+function formatTgl(raw) {
+    if(!raw || raw === "-") return "-";
+    const d = new Date(raw);
+    if(isNaN(d)) return raw;
+    const tgl = d.toLocaleDateString("id-ID",{day:"2-digit",month:"short"});
+    const jam = d.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});
+    return `<div class="text-[9px] font-bold text-slate-700">${tgl}</div><div class="text-[8px] text-slate-400 font-medium">${jam}</div>`;
 }
 
 function renderList(items) {
     $("list").innerHTML = items.map((r, i) => {
-        // Memastikan link menggunakan HTTPS jika tersedia
         let fotoUrl = r.foto ? r.foto.replace("http://", "https://") : "";
-        
-        // Cadangan jika foto gagal load (Avatar inisial)
-        const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.nama)}&background=random&color=fff&size=128`;
-
+        const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.nama)}&background=random&color=fff&size=100`;
         return `
-        <label class="flex items-center gap-4 p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-emerald-50/30 transition-all cursor-pointer group animate-in fade-in duration-300" data-nama="${r.nama.toLowerCase()}">
-            <input type="checkbox" checked data-i="${i}" onchange="updateSummary()" 
-                class="w-5 h-5 rounded-lg text-emerald-600 focus:ring-emerald-500/20 border-slate-200 cursor-pointer">
+        <label class="list-item flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-white hover:shadow-md transition-all cursor-pointer group" data-nama="${r.nama.toLowerCase()}">
+            <input type="checkbox" checked data-i="${i}" onchange="updateSummary()" class="w-4 h-4 rounded text-emerald-600 border-slate-200 cursor-pointer">
             
-            <div class="relative w-12 h-12 flex-shrink-0">
-                <img src="${fotoUrl}" 
-                    onerror="this.src='${fallbackAvatar}'" 
-                    referrerpolicy="no-referrer"
-                    loading="lazy"
-                    class="w-full h-full rounded-full object-cover border-2 border-slate-50 shadow-sm"
-                    alt="Foto ${r.nama}">
+            <div class="relative w-10 h-10 flex-shrink-0">
+                <img src="${fotoUrl}" onerror="this.src='${fallback}'" referrerpolicy="no-referrer" loading="lazy" class="w-full h-full rounded-full object-cover border border-white shadow-sm">
             </div>
 
             <div class="flex-1 min-w-0">
-                <div class="text-[12px] font-bold text-slate-700 truncate group-hover:text-emerald-700 transition-colors">${r.nama}</div>
+                <div class="text-[11px] font-bold text-slate-700 truncate group-hover:text-emerald-700 transition-colors">${r.nama}</div>
                 <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${r.nip}</div>
             </div>
-
-            <div class="text-right flex flex-col items-end opacity-30 group-hover:opacity-100 transition-opacity">
-                <i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
-            </div>
+            
+            <div class="text-right">${formatTgl(r.waktu)}</div>
         </label>
         `;
     }).join("");
@@ -242,7 +204,7 @@ function toggleSelectAll() {
 
 function updateSummary() {
     const checked = document.querySelectorAll("#list input:checked").length;
-    $("summaryBox").innerHTML = `<span class="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">${checked} Terpilih</span>`;
+    $("summaryBox").innerHTML = `<span class="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">${checked} Terpilih</span>`;
 }
 
 function filterList() {
@@ -253,9 +215,9 @@ function filterList() {
 }
 
 function confirmSave() {
-    const checkedCount = document.querySelectorAll("#list input:checked").length;
-    if(checkedCount === 0) return showAlert("Opps!", "Pilih minimal satu peserta.", "error");
-    $("confirmMessage").innerText = `Anda akan memvalidasi ${checkedCount} peserta. Sistem akan otomatis mendeteksi data ganda.`;
+    const count = document.querySelectorAll("#list input:checked").length;
+    if(count === 0) return showAlert("Opps!", "Pilih minimal satu.", "error");
+    $("confirmMessage").innerText = `Validasi kehadiran untuk ${count} peserta?`;
     $("customConfirm").classList.remove("hidden");
     $("confirmYesBtn").onclick = () => { closeConfirm(); simpanData(); };
 }
@@ -263,31 +225,21 @@ function confirmSave() {
 async function simpanData() {
     const rows = [];
     document.querySelectorAll("#list input:checked").forEach(cb => rows.push(DATA[cb.dataset.i]));
-    
-    $("btnSave").disabled = true;
-    $("loading").classList.remove("hidden");
-
+    $("btnSave").disabled = true; $("loading").classList.remove("hidden");
     try {
         const payload = new URLSearchParams();
         payload.append("action", "simpan");
         payload.append("email", EMAIL);
         payload.append("skema", $("skema").value);
         payload.append("rows", JSON.stringify(rows));
-
         const r = await fetch(API_URL, { method: "POST", body: payload });
         const j = await r.json();
         if(!j.status) throw new Error(j.msg);
-        
-        showAlert("Berhasil!", j.msg, "success");
+        showAlert("Berhasil", j.msg, "success");
         loadData();
     } catch (err) { showAlert("Gagal Simpan", err.message, "error"); }
     finally { $("loading").classList.add("hidden"); $("btnSave").disabled = false; }
 }
-
-// PROTEKSI
-document.onkeydown = e => {
-    if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
-};
 </script>
 </body>
 </html>
