@@ -199,10 +199,10 @@ async function loadData() {
 
 function renderList(items) {
     $("list").innerHTML = items.map((r, i) => {
-        // Optimasi Link Foto: Paksa menggunakan HTTPS jika tersedia
+        // Memastikan link menggunakan HTTPS jika tersedia
         let fotoUrl = r.foto ? r.foto.replace("http://", "https://") : "";
         
-        // Cadangan jika foto kosong atau error
+        // Cadangan jika foto gagal load (Avatar inisial)
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.nama)}&background=random&color=fff&size=128`;
 
         return `
@@ -211,8 +211,9 @@ function renderList(items) {
                 class="w-5 h-5 rounded-lg text-emerald-600 focus:ring-emerald-500/20 border-slate-200 cursor-pointer">
             
             <div class="relative w-12 h-12 flex-shrink-0">
-                <img src="${fotoUrl || fallbackAvatar}" 
+                <img src="${fotoUrl}" 
                     onerror="this.src='${fallbackAvatar}'" 
+                    referrerpolicy="no-referrer"
                     loading="lazy"
                     class="w-full h-full rounded-full object-cover border-2 border-slate-50 shadow-sm"
                     alt="Foto ${r.nama}">
