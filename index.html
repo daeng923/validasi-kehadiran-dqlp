@@ -198,20 +198,37 @@ async function loadData() {
 }
 
 function renderList(items) {
-    $("list").innerHTML = items.map((r, i) => `
+    $("list").innerHTML = items.map((r, i) => {
+        // Optimasi Link Foto: Paksa menggunakan HTTPS jika tersedia
+        let fotoUrl = r.foto ? r.foto.replace("http://", "https://") : "";
+        
+        // Cadangan jika foto kosong atau error
+        const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.nama)}&background=random&color=fff&size=128`;
+
+        return `
         <label class="flex items-center gap-4 p-3.5 bg-white border border-slate-100 rounded-2xl hover:bg-emerald-50/30 transition-all cursor-pointer group animate-in fade-in duration-300" data-nama="${r.nama.toLowerCase()}">
             <input type="checkbox" checked data-i="${i}" onchange="updateSummary()" 
                 class="w-5 h-5 rounded-lg text-emerald-600 focus:ring-emerald-500/20 border-slate-200 cursor-pointer">
-            <img src="${r.foto}" onerror="this.src='https://ui-avatars.com/api/?name=${r.nama}&background=random'" class="w-10 h-10 rounded-full object-cover border border-slate-100">
+            
+            <div class="relative w-12 h-12 flex-shrink-0">
+                <img src="${fotoUrl || fallbackAvatar}" 
+                    onerror="this.src='${fallbackAvatar}'" 
+                    loading="lazy"
+                    class="w-full h-full rounded-full object-cover border-2 border-slate-50 shadow-sm"
+                    alt="Foto ${r.nama}">
+            </div>
+
             <div class="flex-1 min-w-0">
-                <div class="text-[12px] font-bold text-slate-700 truncate group-hover:text-emerald-700">${r.nama}</div>
+                <div class="text-[12px] font-bold text-slate-700 truncate group-hover:text-emerald-700 transition-colors">${r.nama}</div>
                 <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${r.nip}</div>
             </div>
-            <div class="text-right flex flex-col items-end opacity-40 group-hover:opacity-100 transition-opacity">
-                <i class="fa-solid fa-clock-rotate-left text-[10px] text-slate-300"></i>
+
+            <div class="text-right flex flex-col items-end opacity-30 group-hover:opacity-100 transition-opacity">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
             </div>
         </label>
-    `).join("");
+        `;
+    }).join("");
 }
 
 function toggleSelectAll() {
