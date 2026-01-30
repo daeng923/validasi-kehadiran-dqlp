@@ -179,7 +179,7 @@ async function loadData() {
         const r = await fetch(`${API_URL}?action=list&email=${EMAIL}&skema=${$("skema").value}`);
         DATA = await r.json();
         if(DATA.length === 0) {
-            $("list").innerHTML = `<div class="p-10 text-slate-300 text-[11px] text-center italic">Antrean kosong.</div>`;
+            $("list").innerHTML = `<div class="p-10 text-slate-300 text-[11px] text-center italic">Belum ada data yang perlu divalidasi</div>`;
         } else {
             $("filterContainer").classList.remove("hidden"); $("btnSave").classList.remove("hidden");
             renderList(DATA); updateSummary();
