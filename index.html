@@ -173,42 +173,19 @@ async function login() {
 }
 
 async function loadData() {
-    $("btnLoad").disabled = true;
-    $("loading").classList.remove("hidden");
-    $("list").innerHTML = ""; 
-    $("emptyBox").innerHTML = ""; 
-    $("btnSave").classList.add("hidden");
-    $("filterContainer").classList.add("hidden");
-
+    $("btnLoad").disabled = true; $("loading").classList.remove("hidden");
+    $("list").innerHTML = ""; $("btnSave").classList.add("hidden");
     try {
-        const r = await fetch(`${API_URL}?action=list&email=${encodeURIComponent(EMAIL)}&skema=${encodeURIComponent($("skema").value)}`);
+        const r = await fetch(`${API_URL}?action=list&email=${EMAIL}&skema=${$("skema").value}`);
         DATA = await r.json();
-
-        if (DATA.length === 0) {
-            // INFO UNTUK PENGAJAR SAAT DATA KOSONG
-            $("emptyBox").innerHTML = `
-                <div class="p-10 text-center animate-in fade-in duration-700">
-                    <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-slate-200">
-                        <i class="fa-regular fa-clipboard text-slate-300 text-2xl"></i>
-                    </div>
-                    <h4 class="text-sm font-bold text-slate-700 mb-1">Daftar Verifikasi Kosong</h4>
-                    <p class="text-[11px] text-slate-400 leading-relaxed max-w-[200px] mx-auto">
-                        Belum ada peserta yang mengisi presensi untuk skema ini.
-                    </p>
-                </div>
-            `;
+        if(DATA.length === 0) {
+            $("list").innerHTML = `<div class="p-10 text-slate-300 text-[11px] text-center italic">Antrean kosong.</div>`;
         } else {
-            $("filterContainer").classList.remove("hidden");
-            $("btnSave").classList.remove("hidden");
-            renderList(DATA);
-            updateSummary();
+            $("filterContainer").classList.remove("hidden"); $("btnSave").classList.remove("hidden");
+            renderList(DATA); updateSummary();
         }
-    } catch (err) { 
-        showAlert("Error", "Gagal mengambil data dari server.", "error"); 
-    } finally { 
-        $("loading").classList.add("hidden"); 
-        $("btnLoad").disabled = false; 
-    }
+    } catch (err) { showAlert("Error", "Gagal sinkron data.", "error"); }
+    finally { $("loading").classList.add("hidden"); $("btnLoad").disabled = false; }
 }
 
 function formatWaktu(raw) {
