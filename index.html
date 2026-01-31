@@ -200,21 +200,30 @@ function renderList(items) {
     $("list").innerHTML = items.map((r, i) => {
         let f = r.foto ? r.foto.replace("http://", "https://") : "";
         const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.nama)}&background=random&color=fff&size=100`;
+        
+        // Cek apakah statusnya IZIN
+        const isIzin = r.status === "IZIN";
+        
         return `
-        <div class="relative">
-            <input type="checkbox" checked data-i="${i}" id="p-${i}" onchange="updateSummary()" class="hidden checkbox-custom">
+        <div class="relative ${isIzin ? 'opacity-80' : ''}">
+            ${!isIzin ? 
+                `<input type="checkbox" checked data-i="${i}" id="p-${i}" onchange="updateSummary()" class="hidden checkbox-custom">` 
+                : ''
+            }
             
-            <label for="p-${i}" class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-[1.5rem] cursor-pointer transition-all hover:border-emerald-200">
+            <label ${!isIzin ? `for="p-${i}"` : ''} class="flex items-center gap-4 p-4 ${isIzin ? 'bg-slate-100 border-slate-200 cursor-default' : 'bg-white border-slate-100 cursor-pointer hover:border-emerald-200'} border rounded-[1.5rem] transition-all">
                 <div class="relative w-11 h-11 flex-shrink-0">
-                    <img src="${f}" onerror="this.src='${fallback}'" referrerpolicy="no-referrer" class="w-full h-full rounded-2xl object-cover border-2 border-white shadow-sm ring-1 ring-slate-100">
+                    <img src="${f}" onerror="this.src='${fallback}'" referrerpolicy="no-referrer" class="w-full h-full rounded-2xl object-cover border-2 border-white shadow-sm ring-1 ring-slate-100 ${isIzin ? 'grayscale' : ''}">
+                    ${isIzin ? `<div class="absolute -top-1 -right-1 bg-amber-500 text-white text-[8px] px-1.5 rounded-full font-bold shadow-sm">IZIN</div>` : ''}
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="text-[12px] font-bold text-slate-700 truncate">${r.nama}</div>
                     <div class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">${r.nip}</div>
+                    ${isIzin ? `<div class="text-[9px] text-amber-600 font-bold mt-0.5 italic flex items-center gap-1"><i class="fa-solid fa-comment-dots"></i> ${r.catatan || 'Tanpa keterangan'}</div>` : ''}
                 </div>
                 
-                <div class="status-icon flex flex-col items-end gap-1 opacity-20 transition-all">
-                    <i class="fa-solid fa-circle-check text-lg"></i>
+                <div class="status-icon flex flex-col items-end gap-1 ${isIzin ? 'opacity-100' : 'opacity-20'} transition-all">
+                    <i class="fa-solid ${isIzin ? 'fa-circle-info text-amber-500' : 'fa-circle-check'} text-lg"></i>
                     ${formatWaktu(r.waktu)}
                 </div>
             </label>
