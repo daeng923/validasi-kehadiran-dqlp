@@ -10,16 +10,19 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: transparent !important; margin: 0; padding: 0; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .checkbox-custom:checked + label { border-color: #10b981 !important; background-color: #f0fdf4 !important; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1); }
+        /* Style Centang Terpilih */
+        .checkbox-custom:checked + label { 
+            border-color: #10b981 !important; 
+            background-color: #f0fdf4 !important; 
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1); 
+        }
         .checkbox-custom:checked + label .status-icon { color: #10b981 !important; opacity: 1 !important; }
         .select-none { -webkit-user-select: none; user-select: none; }
-        
         @keyframes loading-bar {
             0% { width: 0%; transform: translateX(-100%); }
             50% { width: 100%; transform: translateX(0%); }
             100% { width: 0%; transform: translateX(100%); }
         }
-        .animate-loading-bar { animation: loading-bar 2s infinite; }
     </style>
 </head>
 <body class="select-none bg-transparent" oncontextmenu="return false;">
@@ -38,12 +41,12 @@
                 <div id="loginBox" class="space-y-6">
                     <div class="bg-slate-50 border border-slate-100 p-5 rounded-3xl flex items-start gap-4">
                         <div class="bg-emerald-100 p-2.5 rounded-2xl text-emerald-600 flex-shrink-0"><i class="fa-solid fa-shield-halved"></i></div>
-                        <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Selamat datang, Pengajar. Gunakan Email & Token harian untuk memvalidasi presensi peserta.</p>
+                        <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Gunakan Email & Token harian untuk memvalidasi presensi peserta.</p>
                     </div>
                     <div class="space-y-4">
                         <input id="email" type="email" placeholder="Email Pengajar" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none text-sm focus:ring-4 focus:ring-emerald-500/10 transition-all">
                         <input id="token" type="password" placeholder="Token Akses" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none text-sm focus:ring-4 focus:ring-emerald-500/10 transition-all">
-                        <button id="btnLogin" onclick="login()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-[0.98] text-sm tracking-widest uppercase">Buka Portal</button>
+                        <button id="btnLogin" onclick="login()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-[0.98] text-sm uppercase tracking-widest">Buka Portal</button>
                     </div>
                 </div>
 
@@ -51,10 +54,7 @@
                     <div class="flex items-center justify-between bg-slate-50/80 p-5 rounded-[2rem] border border-slate-100">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md"><i class="fa-solid fa-user-tie"></i></div>
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Authorized</span>
-                                <div class="text-xs font-bold text-slate-700 truncate max-w-[140px]" id="userEmailDisplay"></div>
-                            </div>
+                            <div class="text-xs font-bold text-slate-700 truncate max-w-[140px]" id="userEmailDisplay"></div>
                         </div>
                         <button onclick="location.reload()" class="p-3 rounded-2xl text-red-400 hover:bg-red-50"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
                     </div>
@@ -64,17 +64,14 @@
                         <button id="btnLoad" onclick="loadData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-xl text-sm uppercase tracking-widest">Tampilkan Daftar Verifikasi</button>
                     </div>
 
-                    <div id="loading" class="hidden py-12 px-6 text-center animate-pulse">
-                        <div class="relative w-20 h-20 mx-auto mb-6">
+                    <div id="loading" class="hidden py-12 text-center animate-pulse">
+                        <div class="relative w-16 h-16 mx-auto mb-4">
                             <div class="absolute inset-0 border-4 border-emerald-50 rounded-full"></div>
                             <div class="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-emerald-500"><i class="fa-solid fa-cloud-arrow-down text-2xl"></i></div>
                         </div>
                         <h4 id="loadStatusTitle" class="text-sm font-bold text-slate-700 mb-1">Menghubungkan...</h4>
-                        <p id="loadStatusDesc" class="text-[10px] text-slate-400 font-medium italic">Mohon tunggu sebentar.</p>
-                        <div class="w-32 h-1 bg-slate-100 rounded-full mx-auto mt-4 overflow-hidden">
-                            <div class="h-full bg-emerald-500 animate-loading-bar"></div>
-                        </div>
+                        <p id="loadStatusDesc" class="text-[10px] text-slate-400 italic">Mohon tunggu sebentar.</p>
+                        <div class="w-32 h-1 bg-slate-100 rounded-full mx-auto mt-4 overflow-hidden"><div class="h-full bg-emerald-500 animate-[loading-bar_2s_infinite]"></div></div>
                     </div>
 
                     <div id="filterContainer" class="hidden space-y-4 pt-4 border-t border-slate-100">
@@ -86,13 +83,9 @@
                             <button onclick="toggleSelectAll()" id="btnSelectAll" class="text-[10px] font-bold text-slate-400 hover:text-emerald-600 uppercase tracking-wider"><i class="fa-solid fa-check-double mr-1"></i> Pilih Semua</button>
                             <div id="summaryBox"></div>
                         </div>
-                        
                         <div id="emptyBox"></div>
                         <div id="list" class="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar"></div>
-
-                        <div class="pt-4">
-                            <button id="btnSave" onclick="confirmSave()" class="hidden w-full bg-slate-900 hover:bg-black text-white font-bold py-5 rounded-[2rem] shadow-2xl active:scale-[0.98] text-sm uppercase tracking-[0.2em]">Simpan Validasi</button>
-                        </div>
+                        <button id="btnSave" onclick="confirmSave()" class="hidden w-full bg-slate-900 text-white font-bold py-5 rounded-[2rem] shadow-2xl text-sm uppercase tracking-[0.2em]">Simpan Validasi</button>
                     </div>
                 </div>
             </div>
@@ -100,8 +93,8 @@
     </div>
 
     <div id="customAlert" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-xs w-full shadow-2xl text-center">
-            <div id="alertIcon" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6"></div>
+        <div class="bg-white rounded-[2.5rem] p-10 max-w-xs w-full text-center shadow-2xl">
+            <div id="alertIcon" class="mx-auto h-16 w-16 rounded-full mb-6 flex items-center justify-center"></div>
             <h3 id="alertTitle" class="text-xl font-bold text-slate-800 mb-2"></h3>
             <p id="alertMessage" class="text-xs text-slate-500 mb-8 leading-relaxed"></p>
             <button onclick="closeAlert()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl text-xs uppercase">Tutup</button>
@@ -109,13 +102,13 @@
     </div>
 
     <div id="customConfirm" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-xs w-full shadow-2xl text-center">
-            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-50 text-amber-500 mb-6"><i class="fa-solid fa-circle-question text-3xl"></i></div>
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Simpan Validasi?</h3>
+        <div class="bg-white rounded-[2.5rem] p-10 max-w-xs w-full text-center shadow-2xl">
+            <div class="mx-auto h-16 w-16 rounded-full bg-amber-50 text-amber-500 mb-6 flex items-center justify-center"><i class="fa-solid fa-circle-question text-3xl"></i></div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2 leading-tight">Simpan Validasi?</h3>
             <p id="confirmMessage" class="text-xs text-slate-500 mb-8 leading-relaxed"></p>
             <div class="flex gap-4">
                 <button onclick="closeConfirm()" class="flex-1 bg-slate-100 text-slate-400 font-bold py-4 rounded-2xl text-xs">Batal</button>
-                <button id="confirmYesBtn" class="flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl text-xs shadow-lg">Simpan</button>
+                <button id="confirmYesBtn" class="flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl text-xs shadow-lg">Ya, Simpan</button>
             </div>
         </div>
     </div>
@@ -126,15 +119,13 @@ let EMAIL = "", DATA = [], IS_ALL_SELECTED = true;
 
 const $ = id => document.getElementById(id);
 
-function showAlert(title, message, type = 'success') {
+function showAlert(t, m, type) {
     const icon = $('alertIcon');
-    $('alertTitle').innerText = title;
-    $('alertMessage').innerText = message;
-    icon.className = `mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6 ${type === 'error' ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'}`;
+    $('alertTitle').innerText = t; $('alertMessage').innerText = m;
+    icon.className = `mx-auto h-16 w-16 rounded-full mb-6 flex items-center justify-center ${type === 'error' ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'}`;
     icon.innerHTML = type === 'error' ? '<i class="fa-solid fa-xmark text-2xl"></i>' : '<i class="fa-solid fa-check text-2xl"></i>';
     $('customAlert').classList.remove('hidden');
 }
-
 function closeAlert() { $('customAlert').classList.add('hidden'); }
 function closeConfirm() { $('customConfirm').classList.add('hidden'); }
 
@@ -155,32 +146,14 @@ async function login() {
 
 async function loadData() {
     const loader = $("loading");
-    const title = $("loadStatusTitle");
-    const desc = $("loadStatusDesc");
-
-    $("btnLoad").disabled = true;
-    loader.classList.remove("hidden");
-    $("list").innerHTML = ""; $("emptyBox").innerHTML = ""; $("btnSave").classList.add("hidden");
-    $("filterContainer").classList.add("hidden");
-
+    $("btnLoad").disabled = true; loader.classList.remove("hidden");
+    $("list").innerHTML = ""; $("emptyBox").innerHTML = ""; $("btnSave").classList.add("hidden"); $("filterContainer").classList.add("hidden");
     try {
-        title.innerText = "Menghubungkan...";
-        desc.innerText = "Meminta izin akses ke cloud database.";
-
+        $("loadStatusTitle").innerText = "Menghubungkan...";
         const r = await fetch(`${API_URL}?action=list&email=${EMAIL}&skema=${$("skema").value}`);
-        
-        title.innerText = "Mengambil Data...";
-        desc.innerText = "Sedang mengunduh daftar peserta terbaru.";
-        
         DATA = await r.json();
-
-        title.innerText = "Menyusun Daftar...";
-        desc.innerText = "Mengurutkan nama sesuai abjad A-Z.";
-        await new Promise(res => setTimeout(res, 500));
-
         if(DATA.length === 0) {
-            $("emptyBox").innerHTML = `<div class="p-10 text-slate-300 text-[11px] text-center flex flex-col items-center gap-3">
-                <i class="fa-solid fa-clipboard-list text-3xl"></i> Daftar Verifikasi Kosong.</div>`;
+            $("emptyBox").innerHTML = `<div class="p-10 text-slate-300 text-xs text-center italic flex flex-col items-center gap-3"><i class="fa-solid fa-clipboard-list text-3xl"></i> Daftar Verifikasi Kosong.</div>`;
         } else {
             $("filterContainer").classList.remove("hidden"); $("btnSave").classList.remove("hidden");
             renderList(DATA); updateSummary();
@@ -189,6 +162,7 @@ async function loadData() {
     finally { loader.classList.add("hidden"); $("btnLoad").disabled = false; }
 }
 
+// FITUR LAMA: FORMAT WAKTU (CITE: USER SUMMARY)
 function formatWaktu(raw) {
     if(!raw || raw === "-") return "-";
     const d = new Date(raw);
@@ -197,6 +171,7 @@ function formatWaktu(raw) {
     return `<div class="text-[9px] font-bold text-slate-700">${tgl}</div><div class="text-[8px] text-slate-300 font-medium">${jam}</div>`;
 }
 
+// FITUR LAMA: TAMPILAN IZIN & CATATAN (CITE: USER SUMMARY)
 function renderList(items) {
     $("list").innerHTML = items.map((r, i) => {
         let f = r.foto ? r.foto.replace("http://", "https://") : "";
@@ -206,15 +181,15 @@ function renderList(items) {
         return `
         <div class="relative ${isIzin ? 'opacity-70' : ''}">
             ${!isIzin ? `<input type="checkbox" checked data-i="${i}" id="p-${i}" onchange="updateSummary()" class="hidden checkbox-custom">` : ''}
-            <label ${!isIzin ? `for="p-${i}"` : ''} class="flex items-center gap-4 p-4 border rounded-[1.5rem] transition-all ${isIzin ? 'bg-slate-100 border-slate-200 cursor-default' : 'bg-white border-slate-100 cursor-pointer hover:border-emerald-200'}">
+            <label ${!isIzin ? `for="p-${i}"` : ''} class="flex items-center gap-4 p-4 border rounded-[1.5rem] transition-all ${isIzin ? 'bg-slate-100 border-slate-200 cursor-default' : 'bg-white border-slate-100 hover:border-emerald-200 cursor-pointer'}">
                 <div class="relative w-11 h-11 flex-shrink-0">
-                    <img src="${f}" onerror="this.src='${fallback}'" referrerpolicy="no-referrer" loading="lazy" class="w-full h-full rounded-2xl object-cover border-2 border-white shadow-sm ring-1 ring-slate-100 ${isIzin ? 'grayscale' : ''}">
+                    <img src="${f}" onerror="this.src='${fallback}'" referrerpolicy="no-referrer" class="w-full h-full rounded-2xl object-cover border-2 border-white shadow-sm ring-1 ring-slate-100 ${isIzin ? 'grayscale' : ''}">
                     ${isIzin ? `<div class="absolute -top-1 -right-1 bg-amber-500 text-white text-[8px] px-1.5 rounded-full font-bold shadow-sm">IZIN</div>` : ''}
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="text-[12px] font-bold text-slate-700 truncate">${r.nama}</div>
                     <div class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">${r.nip}</div>
-                    ${isIzin ? `<div class="text-[9px] text-amber-600 font-bold mt-0.5 italic"><i class="fa-solid fa-comment-dots"></i> ${r.catatan || 'Izin'}</div>` : ''}
+                    ${isIzin ? `<div class="text-[9px] text-amber-600 font-bold mt-0.5 italic truncate"><i class="fa-solid fa-comment-dots"></i> ${r.catatan || 'Izin'}</div>` : ''}
                 </div>
                 <div class="status-icon flex flex-col items-end gap-1 ${isIzin ? 'opacity-100' : 'opacity-20'} transition-all">
                     <i class="fa-solid ${isIzin ? 'fa-circle-info text-amber-500' : 'fa-circle-check'} text-lg"></i>
@@ -241,32 +216,35 @@ function updateSummary() {
 function filterList() {
     const q = $("searchBox").value.toLowerCase();
     document.querySelectorAll('#list .relative').forEach(el => {
-        const n = el.innerText.toLowerCase();
-        el.style.display = n.includes(q) ? "block" : "none";
+        el.style.display = el.innerText.toLowerCase().includes(q) ? "block" : "none";
     });
 }
 
 function confirmSave() {
-    const c = document.querySelectorAll("#list input:checked").length;
-    if(c === 0) return showAlert("Opps!", "Pilih minimal satu.", "error");
-    $("confirmMessage").innerText = `Validasi kehadiran untuk ${c} peserta terpilih?`;
+    const s = document.querySelectorAll("#list input:checked").length;
+    const u = document.querySelectorAll("#list input[type='checkbox']:not(:checked)").length;
+    if (s === 0 && u === 0) return showAlert("Opps!", "Tidak ada data untuk diproses.", "error");
+    $("confirmMessage").innerText = `Proses: ${s} Hadir & ${u} Tidak Hadir?`;
     $("customConfirm").classList.remove("hidden");
     $("confirmYesBtn").onclick = () => { closeConfirm(); simpanData(); };
 }
 
 async function simpanData() {
-    const rows = [];
-    document.querySelectorAll("#list input:checked").forEach(cb => rows.push(DATA[cb.dataset.i]));
+    const sel = [], unsel = [];
+    document.querySelectorAll("#list input[type='checkbox']").forEach(cb => {
+        if(cb.checked) sel.push(DATA[cb.dataset.i]); else unsel.push(DATA[cb.dataset.i]);
+    });
     $("btnSave").disabled = true; $("loading").classList.remove("hidden");
     try {
         const p = new URLSearchParams();
-        p.append("action", "simpan"); p.append("email", EMAIL); p.append("skema", $("skema").value); p.append("rows", JSON.stringify(rows));
+        p.append("action", "simpan"); p.append("email", EMAIL); p.append("skema", $("skema").value);
+        p.append("rows", JSON.stringify(sel)); p.append("unselectedRows", JSON.stringify(unsel));
         const r = await fetch(API_URL, { method: "POST", body: p });
         const j = await r.json();
         if(!j.status) throw new Error(j.msg);
         showAlert("Berhasil", j.msg, "success");
         loadData();
-    } catch (err) { showAlert("Gagal Simpan", err.message, "error"); }
+    } catch (err) { showAlert("Error", "Gagal menyimpan data.", "error"); }
     finally { $("loading").classList.add("hidden"); $("btnSave").disabled = false; }
 }
 
