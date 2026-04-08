@@ -1,256 +1,713 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: transparent !important; margin: 0; padding: 0; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        /* Style Centang Terpilih */
-        .checkbox-custom:checked + label { 
-            border-color: #10b981 !important; 
-            background-color: #f0fdf4 !important; 
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1); 
-        }
-        .checkbox-custom:checked + label .status-icon { color: #10b981 !important; opacity: 1 !important; }
-        .select-none { -webkit-user-select: none; user-select: none; }
-        @keyframes loading-bar {
-            0% { width: 0%; transform: translateX(-100%); }
-            50% { width: 100%; transform: translateX(0%); }
-            100% { width: 0%; transform: translateX(100%); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: transparent !important; margin: 0; padding: 0; }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    .checkbox-custom:checked + label {
+      border-color: #10b981 !important;
+      background-color: #f0fdf4 !important;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+    }
+    .checkbox-custom:checked + label .status-icon { color: #10b981 !important; opacity: 1 !important; }
+    .select-none { -webkit-user-select: none; user-select: none; }
+    @keyframes loading-bar {
+      0% { width: 0%; transform: translateX(-100%); }
+      50% { width: 100%; transform: translateX(0%); }
+      100% { width: 0%; transform: translateX(100%); }
+    }
+    .btn-disabled { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+  </style>
 </head>
 <body class="select-none bg-transparent" oncontextmenu="return false;">
 
-    <div class="w-full max-w-2xl mx-auto px-2 pt-4 pb-10">
-        <div class="relative bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-            <div class="p-6 md:p-10">
-                <div class="text-center mb-8">
-                    <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight italic">DQLP <span class="text-emerald-600 font-medium not-italic">Validation</span></h2>
-                    <div class="flex justify-center gap-1 mt-2">
-                        <div class="h-1 w-8 bg-emerald-500 rounded-full"></div>
-                        <div class="h-1 w-2 bg-slate-200 rounded-full"></div>
-                    </div>
-                </div>
+  <div class="w-full max-w-2xl mx-auto px-2 pt-4 pb-10">
+    <div class="relative bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+      <div class="p-6 md:p-10">
 
-                <div id="loginBox" class="space-y-6">
-                    <div class="bg-slate-50 border border-slate-100 p-5 rounded-3xl flex items-start gap-4">
-                        <div class="bg-emerald-100 p-2.5 rounded-2xl text-emerald-600 flex-shrink-0"><i class="fa-solid fa-shield-halved"></i></div>
-                        <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Gunakan Email & Token harian untuk memvalidasi presensi peserta.</p>
-                    </div>
-                    <div class="space-y-4">
-                        <input id="email" type="email" placeholder="Email Pengajar" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none text-sm focus:ring-4 focus:ring-emerald-500/10 transition-all">
-                        <input id="token" type="password" placeholder="Token Akses" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none text-sm focus:ring-4 focus:ring-emerald-500/10 transition-all">
-                        <button id="btnLogin" onclick="login()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-[0.98] text-sm uppercase tracking-widest">Buka Portal</button>
-                    </div>
-                </div>
+        <!-- HEADER -->
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight italic">
+            DQLP <span class="text-emerald-600 font-medium not-italic">Validation</span>
+          </h2>
+          <div class="flex justify-center gap-1 mt-2">
+            <div class="h-1 w-8 bg-emerald-500 rounded-full"></div>
+            <div class="h-1 w-2 bg-slate-200 rounded-full"></div>
+          </div>
+        </div>
 
-                <div id="mainBox" class="hidden space-y-6">
-                    <div class="flex items-center justify-between bg-slate-50/80 p-5 rounded-[2rem] border border-slate-100">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md"><i class="fa-solid fa-user-tie"></i></div>
-                            <div class="text-xs font-bold text-slate-700 truncate max-w-[140px]" id="userEmailDisplay"></div>
-                        </div>
-                        <button onclick="location.reload()" class="p-3 rounded-2xl text-red-400 hover:bg-red-50"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
-                    </div>
-
-                    <div class="space-y-3">
-                        <select id="skema" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 font-bold text-sm outline-none text-slate-700 appearance-none"></select>
-                        <button id="btnLoad" onclick="loadData()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl shadow-xl text-sm uppercase tracking-widest">Tampilkan Daftar Verifikasi</button>
-                    </div>
-
-                    <div id="loading" class="hidden py-12 text-center animate-pulse">
-                        <div class="relative w-16 h-16 mx-auto mb-4">
-                            <div class="absolute inset-0 border-4 border-emerald-50 rounded-full"></div>
-                            <div class="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin"></div>
-                        </div>
-                        <h4 id="loadStatusTitle" class="text-sm font-bold text-slate-700 mb-1">Menghubungkan...</h4>
-                        <p id="loadStatusDesc" class="text-[10px] text-slate-400 italic">Mohon tunggu sebentar.</p>
-                        <div class="w-32 h-1 bg-slate-100 rounded-full mx-auto mt-4 overflow-hidden"><div class="h-full bg-emerald-500 animate-[loading-bar_2s_infinite]"></div></div>
-                    </div>
-
-                    <div id="filterContainer" class="hidden space-y-4 pt-4 border-t border-slate-100">
-                        <div class="relative">
-                            <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
-                            <input id="searchBox" onkeyup="filterList()" type="text" placeholder="Cari nama atau NIP..." class="w-full pl-12 pr-5 py-3.5 text-xs rounded-xl border border-slate-100 bg-slate-50 outline-none">
-                        </div>
-                        <div class="flex items-center justify-between px-2">
-                            <button onclick="toggleSelectAll()" id="btnSelectAll" class="text-[10px] font-bold text-slate-400 hover:text-emerald-600 uppercase tracking-wider"><i class="fa-solid fa-check-double mr-1"></i> Pilih Semua</button>
-                            <div id="summaryBox"></div>
-                        </div>
-                        <div id="emptyBox"></div>
-                        <div id="list" class="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar"></div>
-                        <button id="btnSave" onclick="confirmSave()" class="hidden w-full bg-slate-900 text-white font-bold py-5 rounded-[2rem] shadow-2xl text-sm uppercase tracking-[0.2em]">Simpan Validasi</button>
-                    </div>
-                </div>
+        <!-- LOGIN BOX -->
+        <div id="loginBox" class="space-y-6">
+          <div class="bg-slate-50 border border-slate-100 p-5 rounded-3xl flex items-start gap-4">
+            <div class="bg-emerald-100 p-2.5 rounded-2xl text-emerald-600 flex-shrink-0">
+              <i class="fa-solid fa-shield-halved"></i>
             </div>
+            <p class="text-[11px] text-slate-500 leading-relaxed font-medium">
+              Gunakan Email &amp; Token harian untuk memvalidasi presensi peserta.
+            </p>
+          </div>
+          <div class="space-y-4">
+            <input id="email" type="email" placeholder="Email Pengajar"
+              class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none text-base focus:ring-4 focus:ring-emerald-500/10 transition-all"
+              onkeydown="if(event.key==='Enter') login()">
+            <input id="token" type="password" placeholder="Token Akses"
+              class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 outline-none text-base focus:ring-4 focus:ring-emerald-500/10 transition-all"
+              onkeydown="if(event.key==='Enter') login()">
+            <button id="btnLogin" onclick="login()"
+              class="w-full bg-slate-900 text-white font-bold py-5 rounded-2xl shadow-lg active:scale-[0.98] text-base uppercase tracking-widest transition-all">
+              Buka Portal
+            </button>
+          </div>
         </div>
-    </div>
 
-    <div id="customAlert" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-xs w-full text-center shadow-2xl">
-            <div id="alertIcon" class="mx-auto h-16 w-16 rounded-full mb-6 flex items-center justify-center"></div>
-            <h3 id="alertTitle" class="text-xl font-bold text-slate-800 mb-2"></h3>
-            <p id="alertMessage" class="text-xs text-slate-500 mb-8 leading-relaxed"></p>
-            <button onclick="closeAlert()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl text-xs uppercase">Tutup</button>
-        </div>
-    </div>
+        <!-- MAIN BOX (setelah login) -->
+        <div id="mainBox" class="hidden space-y-6">
 
-    <div id="customConfirm" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-[2.5rem] p-10 max-w-xs w-full text-center shadow-2xl">
-            <div class="mx-auto h-16 w-16 rounded-full bg-amber-50 text-amber-500 mb-6 flex items-center justify-center"><i class="fa-solid fa-circle-question text-3xl"></i></div>
-            <h3 class="text-xl font-bold text-slate-800 mb-2 leading-tight">Simpan Validasi?</h3>
-            <p id="confirmMessage" class="text-xs text-slate-500 mb-8 leading-relaxed"></p>
-            <div class="flex gap-4">
-                <button onclick="closeConfirm()" class="flex-1 bg-slate-100 text-slate-400 font-bold py-4 rounded-2xl text-xs">Batal</button>
-                <button id="confirmYesBtn" class="flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl text-xs shadow-lg">Ya, Simpan</button>
+          <!-- Info user -->
+          <div class="flex items-center justify-between bg-slate-50/80 p-5 rounded-[2rem] border border-slate-100">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md">
+                <i class="fa-solid fa-user-tie"></i>
+              </div>
+              <div class="text-sm font-bold text-slate-700 truncate max-w-[160px]" id="userEmailDisplay"></div>
             </div>
+            <button onclick="location.reload()" class="p-3 rounded-2xl text-red-400 hover:bg-red-50 transition-all">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
+          </div>
+
+          <!-- Pilih skema -->
+          <div class="space-y-3">
+            <select id="skema"
+              class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 font-bold text-base outline-none text-slate-700 appearance-none">
+            </select>
+            <button id="btnLoad" onclick="loadData()"
+              class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl shadow-xl text-base uppercase tracking-widest transition-all">
+              Tampilkan Daftar Verifikasi
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div id="loading" class="hidden py-12 text-center">
+            <div class="relative w-16 h-16 mx-auto mb-4">
+              <div class="absolute inset-0 border-4 border-emerald-50 rounded-full"></div>
+              <div class="absolute inset-0 border-4 border-emerald-500 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <h4 id="loadStatusTitle" class="text-base font-bold text-slate-700 mb-1">Menghubungkan...</h4>
+            <p class="text-[10px] text-slate-400 italic">Mohon tunggu sebentar.</p>
+            <div class="w-32 h-1 bg-slate-100 rounded-full mx-auto mt-4 overflow-hidden">
+              <div class="h-full bg-emerald-500 animate-[loading-bar_2s_infinite]"></div>
+            </div>
+          </div>
+
+          <!-- Filter & list -->
+          <div id="filterContainer" class="hidden space-y-4 pt-4 border-t border-slate-100">
+
+            <!-- Tab switcher -->
+            <div class="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+              <button onclick="switchTab('hadir')" id="tabHadir"
+                class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all bg-white text-emerald-600 shadow-sm">
+                <i class="fa-solid fa-user-check mr-1"></i>
+                Hadir <span id="badgeHadir" class="ml-1 bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
+              </button>
+              <button onclick="switchTab('izin')" id="tabIzin"
+                class="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-slate-400">
+                <i class="fa-solid fa-file-circle-exclamation mr-1"></i>
+                Izin <span id="badgeIzin" class="ml-1 bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full text-[9px]">0</span>
+              </button>
+            </div>
+
+            <!-- Search -->
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+              <input id="searchBox" onkeyup="filterList()" type="text"
+                placeholder="Cari nama atau NIP..."
+                class="w-full pl-12 pr-5 py-4 text-sm rounded-xl border border-slate-100 bg-slate-50 outline-none">
+            </div>
+
+            <!-- Select all & summary (hanya tab hadir) -->
+            <div id="hadirControls" class="flex items-center justify-between px-2">
+              <button onclick="toggleSelectAll()" id="btnSelectAll"
+                class="text-xs font-bold text-slate-400 hover:text-emerald-600 uppercase tracking-wider">
+                <i class="fa-solid fa-check-double mr-1"></i> Pilih Semua
+              </button>
+              <div id="summaryBox"></div>
+            </div>
+
+            <div id="emptyBox"></div>
+            <div id="list" class="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar"></div>
+
+            <!-- Info tab izin -->
+            <div id="izinInfo" class="hidden bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-700 font-medium text-center">
+              <i class="fa-solid fa-circle-info mr-1"></i>
+              Data izin hanya untuk referensi. Tidak perlu tindakan dari pengajar.
+            </div>
+
+            <button id="btnSave" onclick="confirmSave()"
+              class="hidden w-full bg-slate-900 text-white font-bold py-5 rounded-[2rem] shadow-2xl text-base uppercase tracking-[0.2em] transition-all">
+              Simpan Validasi
+            </button>
+          </div>
         </div>
+
+      </div>
     </div>
+  </div>
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbz5tu40Iv18YUf4kJ8KYXp2THnsUmQ-PmRtLpAW3LGOqFwsdmaYV_3tKtaiKahyWZrgcA/exec"; 
-let EMAIL = "", DATA = [], IS_ALL_SELECTED = true;
+  <!-- MODAL ALERT -->
+  <div id="customAlert" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2.5rem] p-10 max-w-xs w-full text-center shadow-2xl">
+      <div id="alertIcon" class="mx-auto h-16 w-16 rounded-full mb-6 flex items-center justify-center"></div>
+      <h3 id="alertTitle" class="text-xl font-bold text-slate-800 mb-2"></h3>
+      <p id="alertMessage" class="text-sm text-slate-500 mb-8 leading-relaxed"></p>
+      <button onclick="closeAlert()"
+        class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl text-sm uppercase">
+        Tutup
+      </button>
+    </div>
+  </div>
 
-const $ = id => document.getElementById(id);
+  <!-- MODAL KONVERSI IZIN -->
+  <div id="konversiModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-arrows-rotate text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-800 leading-tight">Kebijakan Pengajar</h3>
+          <p id="konversiNama" class="text-[11px] text-slate-400 font-bold truncate"></p>
+        </div>
+      </div>
+      <div class="mb-6">
+        <label id="konversiLabel" class="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1"></label>
+        <p id="konversiSubLabel" class="text-sm text-slate-400 mb-2"></p>
+        <textarea id="konversiCatatan" rows="3"
+          class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-base focus:ring-2 focus:ring-emerald-500/20 resize-none"
+          placeholder="Tulis catatan di sini..."></textarea>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="tutupKonversiModal()"
+          class="flex-1 bg-slate-100 text-slate-400 font-bold py-4 rounded-2xl text-sm">
+          Batal
+        </button>
+        <button id="konversiBtn"
+          class="flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl text-sm shadow-lg">
+        </button>
+      </div>
+    </div>
+  </div>
 
-function showAlert(t, m, type) {
-    const icon = $('alertIcon');
-    $('alertTitle').innerText = t; $('alertMessage').innerText = m;
-    icon.className = `mx-auto h-16 w-16 rounded-full mb-6 flex items-center justify-center ${type === 'error' ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'}`;
-    icon.innerHTML = type === 'error' ? '<i class="fa-solid fa-xmark text-2xl"></i>' : '<i class="fa-solid fa-check text-2xl"></i>';
-    $('customAlert').classList.remove('hidden');
-}
-function closeAlert() { $('customAlert').classList.add('hidden'); }
-function closeConfirm() { $('customConfirm').classList.add('hidden'); }
+  <!-- MODAL KONFIRMASI -->
+  <div id="customConfirm" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2.5rem] p-10 max-w-xs w-full text-center shadow-2xl">
+      <div class="mx-auto h-16 w-16 rounded-full bg-amber-50 text-amber-500 mb-6 flex items-center justify-center">
+        <i class="fa-solid fa-circle-question text-3xl"></i>
+      </div>
+      <h3 class="text-xl font-bold text-slate-800 mb-2 leading-tight">Simpan Validasi?</h3>
+      <p id="confirmMessage" class="text-sm text-slate-500 mb-8 leading-relaxed"></p>
+      <div class="flex gap-4">
+        <button onclick="closeConfirm()"
+          class="flex-1 bg-slate-100 text-slate-400 font-bold py-4 rounded-2xl text-sm">
+          Batal
+        </button>
+        <button id="confirmYesBtn"
+          class="flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl text-sm shadow-lg">
+          Ya, Simpan
+        </button>
+      </div>
+    </div>
+  </div>
 
-async function login() {
-    const e = $("email").value.trim(); const t = $("token").value.trim();
-    if(!e || !t) return showAlert("Opps!", "Data tidak lengkap.", "error");
-    $("btnLogin").disabled = true; $("btnLogin").innerText = "...";
-    try {
-        const r = await fetch(`${API_URL}?action=login&email=${e}&token=${t}`);
-        const j = await r.json();
-        if(!j.status) throw new Error(j.msg);
-        EMAIL = j.email; $("userEmailDisplay").innerText = EMAIL;
-        $("loginBox").classList.add("hidden"); $("mainBox").classList.remove("hidden");
-        $("skema").innerHTML = (j.skema || []).map(s => `<option value="${s}">${s}</option>`).join("");
-    } catch (err) { showAlert("Gagal Login", err.message, "error"); }
-    finally { $("btnLogin").disabled = false; $("btnLogin").innerText = "Buka Portal"; }
-}
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbz5tu40Iv18YUf4kJ8KYXp2THnsUmQ-PmRtLpAW3LGOqFwsdmaYV_3tKtaiKahyWZrgcA/exec";
 
-async function loadData() {
-    const loader = $("loading");
-    $("btnLoad").disabled = true; loader.classList.remove("hidden");
-    $("list").innerHTML = ""; $("emptyBox").innerHTML = ""; $("btnSave").classList.add("hidden"); $("filterContainer").classList.add("hidden");
-    try {
-        $("loadStatusTitle").innerText = "Menghubungkan...";
-        const r = await fetch(`${API_URL}?action=list&email=${EMAIL}&skema=${$("skema").value}`);
-        DATA = await r.json();
-        if(DATA.length === 0) {
-            $("emptyBox").innerHTML = `<div class="p-10 text-slate-300 text-xs text-center italic flex flex-col items-center gap-3"><i class="fa-solid fa-clipboard-list text-3xl"></i> Daftar Verifikasi Kosong.</div>`;
-        } else {
-            $("filterContainer").classList.remove("hidden"); $("btnSave").classList.remove("hidden");
-            renderList(DATA); updateSummary();
+    // Deteksi mobile untuk skip anti-inspect
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 0 && window.innerWidth < 768);
+
+    let EMAIL = "", DATA = [], DATA_HADIR = [], DATA_IZIN = [];
+    let IS_ALL_SELECTED = true, CURRENT_TAB = 'hadir';
+    const $ = id => document.getElementById(id);
+
+    /* ========== FETCH WITH TIMEOUT + RETRY ========== */
+    async function fetchWithTimeout(url, ms = 15000, retries = 1) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), ms);
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(id);
+          return res;
+        } catch (err) {
+          clearTimeout(id);
+          if (attempt === retries) {
+            if (err.name === 'AbortError') throw new Error('Koneksi timeout. Periksa jaringan Anda.');
+            throw err;
+          }
+          await new Promise(r => setTimeout(r, 2000));
         }
-    } catch (err) { showAlert("Error", "Gagal sinkron data.", "error"); }
-    finally { loader.classList.add("hidden"); $("btnLoad").disabled = false; }
-}
+      }
+    }
 
-// FITUR LAMA: FORMAT WAKTU (CITE: USER SUMMARY)
-function formatWaktu(raw) {
-    if(!raw || raw === "-") return "-";
-    const d = new Date(raw);
-    const tgl = d.toLocaleDateString("id-ID",{day:"2-digit",month:"short"});
-    const jam = d.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});
-    return `<div class="text-[9px] font-bold text-slate-700">${tgl}</div><div class="text-[8px] text-slate-300 font-medium">${jam}</div>`;
-}
+    /* ========== ALERT & CONFIRM ========== */
+    function showAlert(t, m, type) {
+      const icon = $('alertIcon');
+      $('alertTitle').innerText   = t;
+      $('alertMessage').innerText = m;
+      icon.className = `mx-auto h-16 w-16 rounded-full mb-6 flex items-center justify-center ${
+        type === 'error' ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'
+      }`;
+      icon.innerHTML = type === 'error'
+        ? '<i class="fa-solid fa-xmark text-2xl"></i>'
+        : '<i class="fa-solid fa-check text-2xl"></i>';
+      $('customAlert').classList.remove('hidden');
+    }
+    function closeAlert()   { $('customAlert').classList.add('hidden'); }
+    function closeConfirm() { $('customConfirm').classList.add('hidden'); }
 
-// FITUR LAMA: TAMPILAN IZIN & CATATAN (CITE: USER SUMMARY)
-function renderList(items) {
-    $("list").innerHTML = items.map((r, i) => {
-        let f = r.foto ? r.foto.replace("http://", "https://") : "";
-        const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.nama)}&background=random&color=fff&size=100`;
-        const isIzin = r.status === "IZIN";
-        
-        return `
-        <div class="relative ${isIzin ? 'opacity-70' : ''}">
-            ${!isIzin ? `<input type="checkbox" checked data-i="${i}" id="p-${i}" onchange="updateSummary()" class="hidden checkbox-custom">` : ''}
-            <label ${!isIzin ? `for="p-${i}"` : ''} class="flex items-center gap-4 p-4 border rounded-[1.5rem] transition-all ${isIzin ? 'bg-slate-100 border-slate-200 cursor-default' : 'bg-white border-slate-100 hover:border-emerald-200 cursor-pointer'}">
-                <div class="relative w-11 h-11 flex-shrink-0">
-                    <img src="${f}" onerror="this.src='${fallback}'" referrerpolicy="no-referrer" class="w-full h-full rounded-2xl object-cover border-2 border-white shadow-sm ring-1 ring-slate-100 ${isIzin ? 'grayscale' : ''}">
-                    ${isIzin ? `<div class="absolute -top-1 -right-1 bg-amber-500 text-white text-[8px] px-1.5 rounded-full font-bold shadow-sm">IZIN</div>` : ''}
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="text-[12px] font-bold text-slate-700 truncate">${r.nama}</div>
-                    <div class="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">${r.nip}</div>
-                    ${isIzin ? `<div class="text-[9px] text-amber-600 font-bold mt-0.5 italic truncate"><i class="fa-solid fa-comment-dots"></i> ${r.catatan || 'Izin'}</div>` : ''}
-                </div>
-                <div class="status-icon flex flex-col items-end gap-1 ${isIzin ? 'opacity-100' : 'opacity-20'} transition-all">
-                    <i class="fa-solid ${isIzin ? 'fa-circle-info text-amber-500' : 'fa-circle-check'} text-lg"></i>
-                    ${formatWaktu(r.waktu)}
-                </div>
-            </label>
-        </div>`;
-    }).join("");
-}
+    /* ========== LOGIN ========== */
+    async function login() {
+      const e = $("email").value.trim();
+      const t = $("token").value.trim();
+      if (!e || !t) return showAlert("Opps!", "Email dan token wajib diisi.", "error");
 
-function toggleSelectAll() {
-    const cbs = document.querySelectorAll("#list input[type='checkbox']");
-    IS_ALL_SELECTED = !IS_ALL_SELECTED;
-    cbs.forEach(cb => cb.checked = IS_ALL_SELECTED);
-    $("btnSelectAll").innerHTML = IS_ALL_SELECTED ? '<i class="fa-solid fa-xmark mr-1"></i> Batal Semua' : '<i class="fa-solid fa-check-double mr-1"></i> Pilih Semua';
-    updateSummary();
-}
+      const btn = $("btnLogin");
+      btn.disabled  = true;
+      btn.innerText = "Memverifikasi...";
 
-function updateSummary() {
-    const c = document.querySelectorAll("#list input:checked").length;
-    $("summaryBox").innerHTML = `<span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full ring-1 ring-emerald-100">${c} Terpilih</span>`;
-}
-
-function filterList() {
-    const q = $("searchBox").value.toLowerCase();
-    document.querySelectorAll('#list .relative').forEach(el => {
-        el.style.display = el.innerText.toLowerCase().includes(q) ? "block" : "none";
-    });
-}
-
-function confirmSave() {
-    const s = document.querySelectorAll("#list input:checked").length;
-    const u = document.querySelectorAll("#list input[type='checkbox']:not(:checked)").length;
-    if (s === 0 && u === 0) return showAlert("Opps!", "Tidak ada data untuk diproses.", "error");
-    $("confirmMessage").innerText = `Proses: ${s} Hadir & ${u} Tidak Hadir?`;
-    $("customConfirm").classList.remove("hidden");
-    $("confirmYesBtn").onclick = () => { closeConfirm(); simpanData(); };
-}
-
-async function simpanData() {
-    const sel = [], unsel = [];
-    document.querySelectorAll("#list input[type='checkbox']").forEach(cb => {
-        if(cb.checked) sel.push(DATA[cb.dataset.i]); else unsel.push(DATA[cb.dataset.i]);
-    });
-    $("btnSave").disabled = true; $("loading").classList.remove("hidden");
-    try {
-        const p = new URLSearchParams();
-        p.append("action", "simpan"); p.append("email", EMAIL); p.append("skema", $("skema").value);
-        p.append("rows", JSON.stringify(sel)); p.append("unselectedRows", JSON.stringify(unsel));
-        const r = await fetch(API_URL, { method: "POST", body: p });
+      try {
+        const params = new URLSearchParams({ action: 'login', email: e, token: t });
+        const r = await fetchWithTimeout(`${API_URL}?${params}`);
         const j = await r.json();
-        if(!j.status) throw new Error(j.msg);
+
+        if (!j.status) throw new Error(j.msg);
+
+        EMAIL = j.email;
+        $("userEmailDisplay").innerText = EMAIL;
+        $("loginBox").classList.add("hidden");
+        $("mainBox").classList.remove("hidden");
+        $("skema").innerHTML = (j.skema || [])
+          .map(s => `<option value="${s}">${s}</option>`)
+          .join("");
+      } catch (err) {
+        showAlert("Gagal Login", err.message || "Terjadi kesalahan.", "error");
+      } finally {
+        btn.disabled  = false;
+        btn.innerText = "Buka Portal";
+      }
+    }
+
+    /* ========== LOAD DATA ========== */
+    async function loadData() {
+      const btn = $("btnLoad");
+      btn.disabled = true;
+      $("loading").classList.remove("hidden");
+      $("list").innerHTML      = "";
+      $("emptyBox").innerHTML  = "";
+      $("btnSave").classList.add("hidden");
+      $("filterContainer").classList.add("hidden");
+
+      try {
+        $("loadStatusTitle").innerText = "Mengambil data...";
+        const params = new URLSearchParams({
+          action: 'list',
+          email : EMAIL,
+          skema : $("skema").value
+        });
+        const r = await fetchWithTimeout(`${API_URL}?${params}`);
+        DATA    = await r.json();
+
+        if (!Array.isArray(DATA) || DATA.length === 0) {
+          $("emptyBox").innerHTML = `
+            <div class="p-10 text-slate-300 text-xs text-center italic flex flex-col items-center gap-3">
+              <i class="fa-solid fa-clipboard-list text-3xl"></i>
+              Daftar Verifikasi Kosong.
+            </div>`;
+        } else {
+          // Pisahkan data hadir dan izin
+          // HADIR: hanya status HADIR murni (bukan IZIN dan bukan HADIR_KEBIJAKAN)
+          DATA_HADIR = DATA.filter(r => r.status !== 'IZIN' && r.status !== 'HADIR_KEBIJAKAN');
+          // IZIN: status IZIN murni + HADIR_KEBIJAKAN (untuk tracking & batal konversi)
+          DATA_IZIN  = DATA.filter(r => r.status === 'IZIN' || r.status === 'HADIR_KEBIJAKAN');
+
+          // Update badge count
+          $("badgeHadir").innerText = DATA_HADIR.length;
+          $("badgeIzin").innerText  = DATA_IZIN.length;
+
+          $("filterContainer").classList.remove("hidden");
+          CURRENT_TAB = 'hadir';
+          switchTab('hadir');
+        }
+      } catch (err) {
+        showAlert("Error", err.message || "Gagal sinkron data.", "error");
+      } finally {
+        $("loading").classList.add("hidden");
+        btn.disabled = false;
+      }
+    }
+
+    /* ========== TAB SWITCH ========== */
+    function switchTab(tab) {
+      CURRENT_TAB = tab;
+      const btnH  = $("tabHadir");
+      const btnI  = $("tabIzin");
+      const ctrl  = $("hadirControls");
+      const info  = $("izinInfo");
+      const save  = $("btnSave");
+
+      if (tab === 'hadir') {
+        btnH.className = 'flex-1 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all bg-white text-emerald-600 shadow-sm';
+        btnI.className = 'flex-1 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all text-slate-400';
+        ctrl.classList.remove("hidden");
+        info.classList.add("hidden");
+        if (DATA_HADIR.length > 0) save.classList.remove("hidden");
+        else save.classList.add("hidden");
+        renderList(DATA_HADIR);
+        updateSummary();
+      } else {
+        btnI.className = 'flex-1 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all bg-white text-amber-500 shadow-sm';
+        btnH.className = 'flex-1 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all text-slate-400';
+        ctrl.classList.add("hidden");
+        info.classList.remove("hidden");
+        save.classList.add("hidden");
+        renderList(DATA_IZIN);
+      }
+
+      // Reset search
+      $("searchBox").value = '';
+      $("emptyBox").innerHTML = '';
+    }
+
+    /* ========== RENDER LIST ========== */
+    function formatWaktu(raw) {
+      if (!raw || raw === "-") return "-";
+      const d   = new Date(raw);
+      const tgl = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+      const jam = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      return `<div class="text-[9px] font-bold text-slate-700">${tgl}</div>
+              <div class="text-[8px] text-slate-300 font-medium">${jam}</div>`;
+    }
+
+    function renderList(items) {
+      if (CURRENT_TAB === 'izin') {
+        renderIzin(items);
+      } else {
+        renderHadir(items);
+      }
+    }
+
+    // Tab HADIR — tampilan penuh dengan checkbox
+    function renderHadir(items) {
+      if (items.length === 0) {
+        $("list").innerHTML = `
+          <div class="p-10 text-slate-300 text-xs text-center italic flex flex-col items-center gap-3">
+            <i class="fa-solid fa-clipboard-check text-3xl"></i>
+            Semua peserta sudah tervalidasi.
+          </div>`;
+        return;
+      }
+      $("list").innerHTML = items.map((r, i) => {
+        const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.nama)}&background=random&color=fff&size=100`;
+        const foto     = r.foto || fallback;
+        return `
+        <div class="relative">
+          <input type="checkbox" checked data-i="${i}" id="p-${i}" onchange="updateSummary()" class="hidden checkbox-custom">
+          <label for="p-${i}"
+            class="flex items-center gap-4 p-4 border rounded-[1.5rem] transition-all bg-white border-slate-100 hover:border-emerald-200 cursor-pointer">
+            <div class="relative w-11 h-11 flex-shrink-0">
+              <img src="${foto}"
+                onerror="this.onerror=null;this.src='${fallback}'"
+                referrerpolicy="no-referrer"
+                class="w-full h-full rounded-2xl object-cover border-2 border-white shadow-sm ring-1 ring-slate-100">
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-bold text-slate-700 truncate">${r.nama}</div>
+              <div class="text-xs text-slate-400 font-extrabold uppercase tracking-widest">${r.nip}</div>
+            </div>
+            <div class="status-icon flex flex-col items-end gap-1 opacity-20 transition-all">
+              <i class="fa-solid fa-circle-check text-lg"></i>
+              ${formatWaktu(r.waktu)}
+            </div>
+          </label>
+        </div>`;
+      }).join("");
+    }
+
+    // Tab IZIN — compact accordion, default collapsed
+    function renderIzin(items) {
+      if (items.length === 0) {
+        $("list").innerHTML = `
+          <div class="p-10 text-slate-300 text-xs text-center italic flex flex-col items-center gap-3">
+            <i class="fa-solid fa-file-circle-check text-3xl"></i>
+            Tidak ada laporan izin.
+          </div>`;
+        return;
+      }
+
+      const izinMurni    = items.filter(r => r.status === 'IZIN');
+      const hadirKebijak = items.filter(r => r.status === 'HADIR_KEBIJAKAN');
+
+      const renderItem = (r, showKonversi) => {
+        const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.nama)}&background=f59e0b&color=fff&size=60`;
+        const foto     = r.foto || fallback;
+        const isKebijak = r.status === 'HADIR_KEBIJAKAN';
+        let tglStr = '-', jamStr = '-';
+        if (r.waktu && r.waktu !== '-') {
+          const d = new Date(r.waktu);
+          tglStr = d.toLocaleDateString("id-ID", { weekday: 'short', day: "2-digit", month: "short", year: "numeric" });
+          jamStr = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+        }
+        return `
+        <div class="px-5 py-3 ${isKebijak ? 'bg-emerald-50/60' : 'bg-white/60'}">
+          <div class="flex items-center gap-3">
+            <div class="relative flex-shrink-0">
+              <img src="${foto}"
+                onerror="this.onerror=null;this.src='${fallback}'"
+                referrerpolicy="no-referrer"
+                class="w-8 h-8 rounded-xl object-cover ring-1 ${isKebijak ? 'ring-emerald-200' : 'ring-amber-100 grayscale'}">
+              ${isKebijak ? `<div class="absolute -top-1 -right-1 bg-emerald-500 rounded-full w-3 h-3 flex items-center justify-center">
+                <i class="fa-solid fa-check text-white" style="font-size:6px"></i>
+              </div>` : ''}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <div class="text-sm font-bold text-slate-700 truncate">${r.nama}</div>
+                ${isKebijak ? `<span class="text-[8px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold flex-shrink-0">Kebijakan</span>` : ''}
+              </div>
+              <div class="text-xs text-slate-400 font-bold uppercase tracking-widest">${r.nip}</div>
+              ${r.catatan ? `<div class="text-xs ${isKebijak ? 'text-emerald-600' : 'text-amber-600'} italic truncate mt-0.5">
+                <i class="fa-solid fa-comment-dots mr-0.5"></i>${r.catatan}
+              </div>` : ''}
+            </div>
+            <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+              <div class="text-right">
+                <div class="text-xs font-bold text-slate-600">${tglStr}</div>
+                <div class="text-xs text-slate-400">${jamStr} WIB</div>
+              </div>
+              ${isKebijak
+                ? `<button onclick="bukaBatalKonversi(${r.row}, '${r.nama.replace(/'/g, "\'")}')"
+                    class="text-xs font-bold text-red-400 hover:text-red-600 uppercase tracking-wider border border-red-200 hover:border-red-400 px-2.5 py-1.5 rounded-lg transition-all">
+                    Batalkan
+                  </button>`
+                : `<button onclick="bukaKonversiIzin(${r.row}, '${r.nama.replace(/'/g, "\'")}')"
+                    class="text-xs font-bold text-emerald-600 hover:text-emerald-800 uppercase tracking-wider border border-emerald-200 hover:border-emerald-400 px-2.5 py-1.5 rounded-lg transition-all">
+                    Konversi
+                  </button>`
+              }
+            </div>
+          </div>
+        </div>`;
+      };
+
+      $("list").innerHTML = `
+        <div class="border border-amber-100 rounded-2xl overflow-hidden bg-amber-50/30">
+          <button onclick="toggleIzinAccordion()"
+            class="w-full flex items-center justify-between px-5 py-4 text-left">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-file-circle-exclamation text-amber-500 text-sm"></i>
+              <span class="text-xs font-bold text-amber-700 uppercase tracking-wider">
+                ${izinMurni.length} Izin
+                ${hadirKebijak.length > 0 ? `<span class="ml-2 bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full text-[9px]">${hadirKebijak.length} Kebijakan</span>` : ''}
+              </span>
+            </div>
+            <i id="izinChevron" class="fa-solid fa-chevron-down text-amber-400 text-xs transition-transform duration-300"></i>
+          </button>
+          <div id="izinContent" class="hidden divide-y divide-amber-100/50">
+            ${hadirKebijak.length > 0 ? `
+              <div class="px-5 py-2 bg-emerald-50">
+                <p class="text-xs font-black text-emerald-600 uppercase tracking-widest">Sudah Dikonversi</p>
+              </div>
+              ${hadirKebijak.map(r => renderItem(r, false)).join('')}
+              <div class="px-5 py-2 bg-amber-50">
+                <p class="text-xs font-black text-amber-600 uppercase tracking-widest">Menunggu Keputusan</p>
+              </div>` : ''}
+            ${izinMurni.map(r => renderItem(r, true)).join('')}
+          </div>
+        </div>`;
+    }
+
+    function toggleIzinAccordion() {
+      const content  = $("izinContent");
+      const chevron  = $("izinChevron");
+      const isHidden = content.classList.contains("hidden");
+      content.classList.toggle("hidden", !isHidden);
+      chevron.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+    }
+
+    /* ========== KONVERSI IZIN ========== */
+    let _konversiRow = 0, _konversiNama = '';
+
+    function bukaKonversiIzin(row, nama) {
+      _konversiRow  = row;
+      _konversiNama = nama;
+      $("konversiNama").innerText    = nama;
+      $("konversiCatatan").value     = '';
+      $("konversiLabel").innerText   = 'Catatan Kebijakan';
+      $("konversiSubLabel").innerText = 'Tuliskan syarat/kebijakan yang disepakati (wajib)';
+      $("konversiBtn").className     = 'flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl text-xs shadow-lg';
+      $("konversiBtn").innerText     = 'Konversi ke Hadir';
+      $("konversiBtn").onclick       = () => prosesKonversi();
+      $("konversiModal").classList.remove("hidden");
+      setTimeout(() => $("konversiCatatan").focus(), 100);
+    }
+
+    function bukaBatalKonversi(row, nama) {
+      _konversiRow  = row;
+      _konversiNama = nama;
+      $("konversiNama").innerText    = nama;
+      $("konversiCatatan").value     = '';
+      $("konversiLabel").innerText   = 'Alasan Pembatalan';
+      $("konversiSubLabel").innerText = 'Tuliskan alasan pembatalan kebijakan (wajib)';
+      $("konversiBtn").className     = 'flex-1 bg-red-500 text-white font-bold py-4 rounded-2xl text-xs shadow-lg';
+      $("konversiBtn").innerText     = 'Batalkan Konversi';
+      $("konversiBtn").onclick       = () => prosesBatalKonversi();
+      $("konversiModal").classList.remove("hidden");
+      setTimeout(() => $("konversiCatatan").focus(), 100);
+    }
+
+    function tutupKonversiModal() {
+      $("konversiModal").classList.add("hidden");
+    }
+
+    async function prosesKonversi() {
+      const catatan = $("konversiCatatan").value.trim();
+      if (!catatan) return showAlert("Opps!", "Catatan kebijakan wajib diisi.", "error");
+
+      tutupKonversiModal();
+      $("loading").classList.remove("hidden");
+
+      try {
+        const params = new URLSearchParams({
+          action  : 'konversi_izin',
+          email   : EMAIL,
+          row     : _konversiRow,
+          catatan : catatan
+        });
+        const r = await fetchWithTimeout(`${API_URL}?${params}`);
+        const j = await r.json();
+        if (!j.status) throw new Error(j.msg);
         showAlert("Berhasil", j.msg, "success");
         loadData();
-    } catch (err) { showAlert("Error", "Gagal menyimpan data.", "error"); }
-    finally { $("loading").classList.add("hidden"); $("btnSave").disabled = false; }
-}
+      } catch (err) {
+        showAlert("Error", err.message || "Gagal konversi.", "error");
+      } finally {
+        $("loading").classList.add("hidden");
+      }
+    }
 
-document.onkeydown = e => {
-    if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
-};
-</script>
+    async function prosesBatalKonversi() {
+      const catatan = $("konversiCatatan").value.trim();
+      if (!catatan) return showAlert("Opps!", "Alasan pembatalan wajib diisi.", "error");
+
+      tutupKonversiModal();
+      $("loading").classList.remove("hidden");
+
+      try {
+        const params = new URLSearchParams({
+          action  : 'batal_konversi',
+          email   : EMAIL,
+          row     : _konversiRow,
+          catatan : catatan
+        });
+        const r = await fetchWithTimeout(`${API_URL}?${params}`);
+        const j = await r.json();
+        if (!j.status) throw new Error(j.msg);
+        showAlert("Berhasil", j.msg, "success");
+        loadData();
+      } catch (err) {
+        showAlert("Error", err.message || "Gagal batalkan.", "error");
+      } finally {
+        $("loading").classList.add("hidden");
+      }
+    }
+
+    /* ========== SELECT ALL / SUMMARY / FILTER ========== */
+    function toggleSelectAll() {
+      const cbs = document.querySelectorAll("#list input[type='checkbox']");
+      IS_ALL_SELECTED = !IS_ALL_SELECTED;
+      cbs.forEach(cb => cb.checked = IS_ALL_SELECTED);
+      $("btnSelectAll").innerHTML = IS_ALL_SELECTED
+        ? '<i class="fa-solid fa-xmark mr-1"></i> Batal Semua'
+        : '<i class="fa-solid fa-check-double mr-1"></i> Pilih Semua';
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const c = document.querySelectorAll("#list input:checked").length;
+      $("summaryBox").innerHTML = `
+        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full ring-1 ring-emerald-100">
+          ${c} Terpilih
+        </span>`;
+    }
+
+    function filterList() {
+      const q = $("searchBox").value.toLowerCase();
+      document.querySelectorAll('#list .relative').forEach(el => {
+        el.style.display = el.innerText.toLowerCase().includes(q) ? "block" : "none";
+      });
+    }
+
+    /* ========== KONFIRMASI & SIMPAN ========== */
+    function confirmSave() {
+      if (CURRENT_TAB !== 'hadir') return;
+      const s = document.querySelectorAll("#list input:checked").length;
+      const u = document.querySelectorAll("#list input[type='checkbox']:not(:checked)").length;
+      if (s === 0 && u === 0) return showAlert("Opps!", "Tidak ada data untuk diproses.", "error");
+      $("confirmMessage").innerText = `Proses: ${s} Hadir & ${u} Tidak Hadir?`;
+      $("customConfirm").classList.remove("hidden");
+      $("confirmYesBtn").onclick = () => { closeConfirm(); simpanData(); };
+    }
+
+    async function simpanData() {
+      const sel = [], unsel = [];
+      document.querySelectorAll("#list input[type='checkbox']").forEach(cb => {
+        if (cb.checked) sel.push(DATA_HADIR[cb.dataset.i]);
+        else unsel.push(DATA_HADIR[cb.dataset.i]);
+      });
+
+      const btn = $("btnSave");
+      btn.disabled = true;
+      $("loading").classList.remove("hidden");
+
+      try {
+        const params = new URLSearchParams({
+          action         : 'simpan',
+          email          : EMAIL,
+          skema          : $("skema").value,
+          rows           : JSON.stringify(sel),
+          unselectedRows : JSON.stringify(unsel)
+        });
+        const r = await fetchWithTimeout(`${API_URL}?${params}`);
+        const j = await r.json();
+
+        if (!j.status) throw new Error(j.msg);
+        showAlert("Berhasil", j.msg, "success");
+        loadData();
+      } catch (err) {
+        showAlert("Error", err.message || "Gagal menyimpan data.", "error");
+      } finally {
+        $("loading").classList.add("hidden");
+        btn.disabled = false;
+      }
+    }
+
+    /* ========== ANTI-INSPECT (skip on mobile) ========== */
+    if (!isMobile) {
+      document.onkeydown = e => {
+        if (
+          e.keyCode === 123 ||
+          (e.ctrlKey && e.shiftKey && [73, 74, 67].includes(e.keyCode)) ||
+          (e.ctrlKey && e.keyCode === 85)
+        ) return false;
+      };
+    }
+  </script>
 </body>
 </html>
