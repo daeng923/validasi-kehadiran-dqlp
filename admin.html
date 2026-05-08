@@ -893,8 +893,8 @@
     // + sheet tambahan dengan detail field
     const rows = [];
 
-    // Header sheet utama (sesuai template infokom)
-    rows.push(['nomor', 'nip', 'kegiatan', 'json']);
+    // Header sheet utama (sesuai template infokom): nomor, nip, id_kegiatan, kegiatan, json
+    rows.push(['nomor', 'nip', 'id_kegiatan', 'kegiatan', 'json']);
 
     dataInfokom.forEach(r => {
       const jsonObj = {
@@ -909,15 +909,16 @@
         total_hadir     : r.total_hadir    || 0,
         periode         : r.periode        || ''
       };
-      rows.push([r.nomor, r.nip, r.kegiatan, JSON.stringify(jsonObj)]);
+      rows.push([r.nomor, r.nip, r.id_kegiatan || '', r.kegiatan, JSON.stringify(jsonObj)]);
     });
 
-    // Buat juga sheet detail yang mudah dibaca
+    // Sheet detail yang mudah dibaca
     const rowsDetail = [];
-    rowsDetail.push(['No','NIP','Nama','Skema','Periode','Nama Pelatihan','Penyelenggara','Tingkat','Tanggal Mulai','Tanggal Selesai','Nomor Sertifikat','Total Hadir','Link PDF']);
+    rowsDetail.push(['No','NIP','Nama','Skema','Periode','ID Kegiatan','Nama Pelatihan','Penyelenggara','Tingkat','Tanggal Mulai','Tanggal Selesai','Nomor Sertifikat','Total Hadir','Link PDF']);
     dataInfokom.forEach((r, i) => {
       rowsDetail.push([
         i+1, r.nip, r.nama, r.skema, r.periode,
+        r.id_kegiatan || '',
         r.nama_pelatihan, r.penyelenggara, r.tingkat,
         r.tanggal_mulai, r.tanggal_selesai, r.nomor_sertifikat,
         r.total_hadir, r.link_pdf
@@ -930,10 +931,10 @@
     const ws2 = XLSX.utils.aoa_to_sheet(rowsDetail);
 
     // Set lebar kolom
-    ws1['!cols'] = [{ wch:8 },{ wch:20 },{ wch:25 },{ wch:80 }];
+    ws1['!cols'] = [{ wch:8 },{ wch:20 },{ wch:15 },{ wch:25 },{ wch:80 }];
     ws2['!cols'] = [{ wch:5 },{ wch:20 },{ wch:35 },{ wch:15 },{ wch:12 },
-                    { wch:30 },{ wch:20 },{ wch:12 },{ wch:20 },{ wch:20 },
-                    { wch:30 },{ wch:12 },{ wch:50 }];
+                    { wch:15 },{ wch:30 },{ wch:20 },{ wch:12 },{ wch:20 },
+                    { wch:20 },{ wch:30 },{ wch:12 },{ wch:50 }];
 
     XLSX.utils.book_append_sheet(wb, ws1, 'Data Infokom');
     XLSX.utils.book_append_sheet(wb, ws2, 'Detail');
