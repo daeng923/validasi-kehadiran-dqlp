@@ -634,20 +634,23 @@
       dSertifAll = d.peserta;
       dSertifFiltered = [...dSertifAll];
 
-      const belumTerbit = dSertifAll.filter(p => !p.sudah_terbit).length;
+      const belumTerbit  = dSertifAll.filter(p => !p.sudah_terbit && p.boleh_generate).length;
+      const belumCukup   = dSertifAll.filter(p => !p.sudah_terbit && !p.boleh_generate && (p.total||0) < 10).length;
+      const sudahTerbit2 = dSertifAll.filter(p => p.sudah_terbit).length;
+
       document.getElementById('sertifInfo').innerHTML = `
-        <div class="card p-4 flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <span class="badge ${d.setting_aktif ? 'badge-green' : 'badge-red'}">${d.setting_aktif ? 'Setting Aktif' : 'Setting Nonaktif'}</span>
-            <span class="text-sm font-black text-white">${d.peserta.length} Peserta</span>
-            <span class="text-sm font-bold" style="color:var(--warning)">${belumTerbit} Belum Terbit</span>
-            <span class="text-sm font-bold" style="color:var(--accent2)">${d.peserta.length - belumTerbit} Sudah Terbit</span>
-          </div>
+        <div class="card p-4 flex items-center gap-6 flex-wrap">
+          <span class="badge ${d.setting_aktif ? 'badge-green' : 'badge-red'}">${d.setting_aktif ? 'Setting Aktif' : 'Setting Nonaktif'}</span>
+          <span class="text-sm font-black text-white">${d.peserta.length} Total Peserta</span>
+          <span class="text-sm font-bold" style="color:var(--accent2)">${sudahTerbit2} Sudah Terbit</span>
+          <span class="text-sm font-bold" style="color:var(--warning)">${belumTerbit} Siap Generate</span>
+          <span class="text-sm font-bold" style="color:var(--muted)">${belumCukup} Belum Cukup Hadir</span>
         </div>`;
       document.getElementById('sertifInfo').classList.remove('hidden');
 
       renderSertifTabel(dSertifFiltered);
       if (belumTerbit > 0) document.getElementById('bulkGenBtn').classList.remove('hidden');
+      else document.getElementById('bulkGenBtn').classList.add('hidden');
 
     } catch(e) { toast('Gagal memuat data.','error'); }
   }
@@ -660,16 +663,39 @@
 
   function renderSertifTabel(data) {
     if (!data.length) { document.getElementById('sertifT').innerHTML = '<div class="p-10 text-center text-sm" style="color:var(--muted)">Tidak ada data.</div>'; return; }
-    let h = '<table><thead><tr><th>NIP</th><th>Nama</th><th>Skema</th><th>Total Hadir</th><th>Status</th><th>Aksi</th></tr></thead><tbody>';
+    let h = '<table><thead><tr><th>NIP</th><th>Nama</th><th>Skema</th><th>Total</th><th>Hak</th><th>Status Periode Ini</th><th>Aksi</th></tr></thead><tbody>';
     data.forEach(p => {
-      const s = p.sudah_terbit;
+      const sudah  = p.sudah_terbit;
+      const boleh  = p.boleh_generate;
+      const hak    = p.hak || 0;
+      const total  = p.total || 0;
+
+      let statusBadge, aksiBtn;
+
+      if (sudah) {
+        statusBadge = '<span class="badge badge-green">Terbit</span>';
+        aksiBtn = '—';
+      } else if (boleh) {
+        statusBadge = '<span class="badge badge-amber">Belum Terbit</span>';
+        aksiBtn = `<button onclick="generateSatu('${p.nip}','${p.nama.replace(/'/g,"\\'")}','${p.skema}')"
+          class="btn btn-success" style="padding:5px 12px;font-size:10px">Generate</button>`;
+      } else if (total < 10) {
+        statusBadge = '<span class="badge badge-red">Belum Cukup</span>';
+        aksiBtn = `<span style="font-size:10px;color:var(--muted)">Butuh ${10 - total}x lagi</span>`;
+      } else {
+        // Sudah dapat di periode lain, belum dapat di sini
+        statusBadge = '<span class="badge badge-slate">Antrean Periode Lain</span>';
+        aksiBtn = '—';
+      }
+
       h += `<tr>
         <td class="mono text-xs">${p.nip}</td>
         <td class="font-semibold">${p.nama}</td>
         <td>${p.skema || '—'}</td>
-        <td class="text-center font-black" style="color:${p.total >= 10 ? 'var(--accent2)' : 'var(--muted)'}">${p.total}</td>
-        <td>${s ? '<span class="badge badge-green">Terbit</span>' : '<span class="badge badge-amber">Belum</span>'}</td>
-        <td>${!s ? `<button onclick="generateSatu('${p.nip}','${p.nama}')" class="btn btn-success" style="padding:5px 12px;font-size:10px">Generate</button>` : '—'}</td>
+        <td class="text-center font-black" style="color:${total >= 10 ? 'var(--accent2)' : 'var(--muted)'}">${total}</td>
+        <td class="text-center font-black text-white">${hak}</td>
+        <td>${statusBadge}</td>
+        <td>${aksiBtn}</td>
       </tr>`;
     });
     document.getElementById('sertifT').innerHTML = h + '</tbody></table>';
@@ -689,15 +715,15 @@
 
   function konfirmBulkGenerate() {
     const periode  = document.getElementById('sertifPeriode').value;
-    const belum    = dSertifAll.filter(p => !p.sudah_terbit);
-    document.getElementById('confirmMsg').textContent = `Generate sertifikat untuk ${belum.length} peserta di ${periode}? Proses ini membutuhkan waktu cukup lama.`;
+    const belum    = dSertifAll.filter(p => p.boleh_generate);
+    document.getElementById('confirmMsg').textContent = `Generate sertifikat untuk ${belum.length} peserta yang berhak di ${periode}? Proses ini membutuhkan waktu cukup lama.`;
     document.getElementById('confirmModal').classList.remove('hidden');
     document.getElementById('confirmYes').onclick = () => { closeConfirm(); bulkGenerate(); };
   }
 
   async function bulkGenerate() {
     const periode = document.getElementById('sertifPeriode').value;
-    const belum   = dSertifAll.filter(p => !p.sudah_terbit);
+    const belum   = dSertifAll.filter(p => p.boleh_generate);
     let sukses = 0, gagal = 0;
 
     overlay(true, `Generating 0 / ${belum.length}...`);
@@ -707,7 +733,7 @@
         const d = await api({ action:'generate_sertifikat', kegiatan:'DQLP', kode:belum[i].nip, periode }, 90000);
         if (d.status === 'ok') sukses++; else gagal++;
       } catch(e) { gagal++; }
-      await new Promise(r => setTimeout(r, 1000)); // jeda 1 detik antar request
+      await new Promise(r => setTimeout(r, 1500));
     }
     overlay(false);
     toast(`Selesai! ${sukses} berhasil, ${gagal} gagal.`, gagal > 0 ? 'error' : 'success');
