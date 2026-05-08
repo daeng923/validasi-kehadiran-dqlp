@@ -135,6 +135,9 @@
       <button onclick="show('sertifikat',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
         <i class="fa-solid fa-certificate w-4 text-center"></i>Generate Sertif
       </button>
+      <button onclick="show('semua',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-layer-group w-4 text-center"></i>Semua Periode
+      </button>
       <button onclick="show('infokom',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
         <i class="fa-solid fa-file-code w-4 text-center"></i>Data Infokom
       </button>
@@ -281,6 +284,31 @@
         </div>
       </div>
 
+      <!-- SEMUA PERIODE -->
+      <div id="semua" class="tab-content space-y-4">
+        <div class="card p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-black text-white text-sm uppercase tracking-widest">
+                <i class="fa-solid fa-layer-group mr-2" style="color:var(--accent)"></i>Rekap Sertifikat Semua Periode
+              </h3>
+              <p class="text-[10px] mt-0.5" style="color:var(--muted)">Status sertifikat peserta per periode</p>
+            </div>
+            <button onclick="loadPesertaSemua()" class="btn btn-ghost"><i class="fa-solid fa-rotate mr-1"></i>Muat Data</button>
+          </div>
+          <div class="flex gap-3">
+            <input type="text" id="qSemua" onkeyup="fSemua()" placeholder="Cari NIP atau Nama..." class="flex-1">
+            <button id="bulkSemuaBtn" onclick="konfirmBulkSemua()" class="btn btn-success hidden">
+              <i class="fa-solid fa-gears mr-2"></i>Bulk Generate Semua Berhak
+            </button>
+          </div>
+        </div>
+        <div id="semuaInfo" class="hidden"></div>
+        <div id="semuaT" class="card overflow-hidden">
+          <div class="p-8 text-center text-sm font-bold" style="color:var(--muted)">Klik "Muat Data" untuk memuat semua peserta</div>
+        </div>
+      </div>
+
       <!-- DATA INFOKOM -->
       <div id="infokom" class="tab-content space-y-4">
         <div class="card p-5 space-y-4">
@@ -369,6 +397,7 @@
   let TOKEN = '', ADMIN_NAMA = '';
   let dUnit=[], dHb=[], dRekap=[], dPengajar={}, dSkema={}, dKode={};
   let dSertifAll=[], dSertifFiltered=[];
+  let dSemuaAll=[], dSemuaFiltered=[], labelPeriodeGlobal=[];
   let chartUnit, chartHb, chartTren;
 
   /* ===== FETCH ===== */
@@ -426,8 +455,7 @@
     btn.classList.add('active');
     btn.style.color = 'white';
     document.getElementById('pageTitle').textContent = btn.textContent.trim();
-    const loaders = { home:'loadHome', rekap:'loadRekap', raw:'loadRaw', kode:'loadKode', pengajar:'loadPengajar', skema:'loadSkema', token:'loadToken' };
-    if (loaders[id]) window[loaders[id]]();
+    const loaders = { home:'loadHome', rekap:'loadRekap', raw:'loadRaw', kode:'loadKode', pengajar:'loadPengajar', skema:'loadSkema', token:'loadToken' };    if (loaders[id]) window[loaders[id]]();
   }
 
   /* ===== TOAST ===== */
@@ -778,6 +806,142 @@
         document.getElementById('infokomLog').innerHTML = tabel(d, ['nip','nama','skema','periode','nomor','tanggal']);
       }
     } catch(e) {}
+  }
+
+  /* ===== SEMUA PERIODE ===== */
+  async function loadPesertaSemua() {
+    document.getElementById('semuaT').innerHTML = '<div class="p-10 text-center text-sm animate-pulse" style="color:var(--muted)">Memuat data semua periode... (mungkin 30-60 detik)</div>';
+    document.getElementById('semuaInfo').classList.add('hidden');
+    document.getElementById('bulkSemuaBtn').classList.add('hidden');
+
+    try {
+      const d = await api({ action:'get_peserta_semua', kegiatan:'DQLP' }, 90000);
+      if (d.status !== 'ok') { toast(d.message || 'Gagal.','error'); return; }
+
+      dSemuaAll      = d.peserta;
+      dSemuaFiltered = [...dSemuaAll];
+      labelPeriodeGlobal = d.label_periode;
+
+      const totalBoleh   = dSemuaAll.reduce((s,p) => s + p.detail_periode.filter(dp => dp.boleh_generate).length, 0);
+      const totalTerbit  = dSemuaAll.reduce((s,p) => s + p.terbit_count, 0);
+
+      document.getElementById('semuaInfo').innerHTML = `
+        <div class="card p-4 flex items-center gap-6 flex-wrap">
+          <span class="text-sm font-black text-white">${dSemuaAll.length} Peserta</span>
+          <span class="text-sm font-bold" style="color:var(--accent2)">${totalTerbit} Sertifikat Terbit</span>
+          <span class="text-sm font-bold" style="color:var(--warning)">${totalBoleh} Siap Generate</span>
+        </div>`;
+      document.getElementById('semuaInfo').classList.remove('hidden');
+      if (totalBoleh > 0) document.getElementById('bulkSemuaBtn').classList.remove('hidden');
+
+      renderSemuaTabel(dSemuaFiltered);
+
+    } catch(e) { toast('Gagal memuat data.','error'); }
+  }
+
+  function fSemua() {
+    const q = document.getElementById('qSemua').value.toLowerCase();
+    dSemuaFiltered = dSemuaAll.filter(x => String(x.nip||'').toLowerCase().includes(q) || String(x.nama||'').toLowerCase().includes(q));
+    renderSemuaTabel(dSemuaFiltered);
+  }
+
+  function renderSemuaTabel(data) {
+    if (!data.length) { document.getElementById('semuaT').innerHTML = '<div class="p-10 text-center text-sm" style="color:var(--muted)">Tidak ada data.</div>'; return; }
+
+    // Header dinamis per periode
+    const periodeHeaders = labelPeriodeGlobal.map(p => `<th>${p}</th>`).join('');
+    let h = `<table><thead><tr><th>NIP</th><th>Nama</th><th>Total</th><th>Hak</th>${periodeHeaders}<th>Aksi Bulk</th></tr></thead><tbody>`;
+
+    data.forEach(p => {
+      const periodeCells = p.detail_periode.map(dp => {
+        if (dp.terbit) return `<td><span class="badge badge-green">✓ Terbit</span></td>`;
+        if (dp.boleh_generate) return `<td><span class="badge badge-amber">Siap</span><br><span style="font-size:9px;color:var(--muted)">${dp.skema||''}</span></td>`;
+        if (!dp.isAktif) return `<td><span class="badge badge-slate">Nonaktif</span></td>`;
+        return `<td><span style="font-size:10px;color:var(--muted)">${dp.hadir}x</span></td>`;
+      }).join('');
+
+      const bolehList = p.detail_periode.filter(dp => dp.boleh_generate);
+      const aksiBtn   = bolehList.length > 0
+        ? `<button onclick="generateBulkPeserta('${p.nip}','${p.nama.replace(/'/g,"\\'")}')" class="btn btn-success" style="padding:5px 12px;font-size:10px"><i class="fa-solid fa-gears mr-1"></i>${bolehList.length} Periode</button>`
+        : '—';
+
+      h += `<tr>
+        <td class="mono text-xs">${p.nip}</td>
+        <td class="font-semibold">${p.nama}</td>
+        <td class="text-center font-black" style="color:${p.total>=10?'var(--accent2)':'var(--muted)'}">${p.total}</td>
+        <td class="text-center font-black text-white">${p.hak}</td>
+        ${periodeCells}
+        <td>${aksiBtn}</td>
+      </tr>`;
+    });
+
+    document.getElementById('semuaT').innerHTML = h + '</tbody></table>';
+  }
+
+  async function generateBulkPeserta(nip, nama) {
+    const peserta    = dSemuaAll.find(p => p.nip === nip);
+    if (!peserta) return;
+    // Urutkan dari periode terbaru ke terlama
+    const urutanPeriode = [...labelPeriodeGlobal].reverse();
+    const bolehList  = urutanPeriode
+      .map(p => peserta.detail_periode.find(dp => dp.periode === p && dp.boleh_generate))
+      .filter(Boolean);
+    if (!bolehList.length) return;
+
+    if (!confirm(`Generate ${bolehList.length} sertifikat untuk ${nama}?\nUrutan: ${bolehList.map(dp=>dp.periode).join(' → ')}`)) return;
+
+    overlay(true, `Generating sertifikat ${nama}...`);
+    let sukses = 0, gagal = 0;
+    for (const dp of bolehList) {
+      document.getElementById('loadingMsg').textContent = `${nama} — ${dp.periode}`;
+      try {
+        const d = await api({ action:'generate_sertifikat', kegiatan:'DQLP', kode:nip, periode:dp.periode }, 90000);
+        if (d.status === 'ok') sukses++; else gagal++;
+      } catch(e) { gagal++; }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    overlay(false);
+    toast(`${nama}: ${sukses} berhasil, ${gagal} gagal.`, gagal > 0 ? 'error' : 'success');
+    loadPesertaSemua();
+  }
+
+  function konfirmBulkSemua() {
+    const totalBoleh = dSemuaAll.reduce((s,p) => s + p.detail_periode.filter(dp => dp.boleh_generate).length, 0);
+    document.getElementById('confirmMsg').textContent =
+      `Generate SEMUA sertifikat (${totalBoleh} total) untuk semua peserta yang berhak di semua periode? Proses ini akan memakan waktu sangat lama.`;
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.getElementById('confirmYes').onclick = () => { closeConfirm(); bulkGenerateSemua(); };
+  }
+
+  async function bulkGenerateSemua() {
+    // Kumpulkan semua task diurutkan: Periode 3 dulu, baru Periode 2, Periode 1
+    // agar sertifikat diterbitkan dari periode terbaru ke terlama
+    const urutanPeriode = [...labelPeriodeGlobal].reverse();
+    const tasks = [];
+    urutanPeriode.forEach(periode => {
+      dSemuaAll.forEach(p => {
+        const dp = p.detail_periode.find(d => d.periode === periode && d.boleh_generate);
+        if (dp) tasks.push({ nip: p.nip, nama: p.nama, periode });
+      });
+    });
+
+    let sukses = 0, gagal = 0;
+    overlay(true, `Bulk Generate: 0 / ${tasks.length}`);
+
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
+      document.getElementById('loadingMsg').textContent =
+        `${i+1}/${tasks.length} — ${t.nama} (${t.periode})`;
+      try {
+        const d = await api({ action:'generate_sertifikat', kegiatan:'DQLP', kode:t.nip, periode:t.periode }, 90000);
+        if (d.status === 'ok') sukses++; else gagal++;
+      } catch(e) { gagal++; }
+      // Jeda 2 detik antar request agar tidak diblokir Google
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    overlay(false);
+    toast(`Selesai! ${sukses} berhasil, ${gagal} gagal.`, gagal > 0 ? 'error' : 'success');
+    loadPesertaSemua();
   }
 
   /* ===== KODE ===== */
