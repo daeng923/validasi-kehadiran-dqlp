@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DQLP Admin Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #181c27; --surface2: #1e2436;
+      --border: #2a3047; --accent: #3b82f6; --accent2: #10b981;
+      --text: #e2e8f0; --muted: #64748b; --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .mono { font-family: 'DM Mono', monospace; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeUp 0.3s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .loader { border:3px solid rgba(255,255,255,0.1); border-top:3px solid var(--accent); border-radius:50%; width:32px; height:32px; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    ::-webkit-scrollbar { width:4px; height:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
+    .nav-btn { transition:all 0.15s; }
+    .nav-btn.active { background:var(--accent); color:white; }
+    input, select, textarea {
+      background:var(--surface2); border:1px solid var(--border); color:var(--text);
+      border-radius:10px; padding:10px 14px; font-family:inherit; font-size:13px;
+      outline:none; transition:border 0.2s;
+    }
+    input:focus, select:focus { border-color:var(--accent); }
+    input::placeholder { color:var(--muted); }
+    .btn { padding:10px 20px; border-radius:10px; font-weight:700; font-size:12px; cursor:pointer; transition:all 0.15s; border:none; letter-spacing:0.05em; text-transform:uppercase; }
+    .btn-primary { background:var(--accent); color:white; }
+    .btn-primary:hover { background:#2563eb; }
+    .btn-success { background:var(--accent2); color:white; }
+    .btn-success:hover { background:#059669; }
+    .btn-danger { background:var(--danger); color:white; }
+    .btn-ghost { background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
+    .btn-ghost:hover { color:var(--text); border-color:var(--muted); }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; }
+    .badge { padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; }
+    .badge-green { background:rgba(16,185,129,0.15); color:#34d399; }
+    .badge-blue  { background:rgba(59,130,246,0.15); color:#60a5fa; }
+    .badge-amber { background:rgba(245,158,11,0.15); color:#fbbf24; }
+    .badge-red   { background:rgba(239,68,68,0.15);  color:#f87171; }
+    .badge-slate { background:rgba(100,116,139,0.15); color:#94a3b8; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th { padding:10px 14px; text-align:left; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); z-index:5; }
+    td { padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text); vertical-align:middle; }
+    tr:hover td { background:rgba(255,255,255,0.02); }
+    .progress-bar { height:4px; background:var(--border); border-radius:99px; overflow:hidden; }
+    .progress-fill { height:100%; border-radius:99px; transition:width 0.5s ease; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center p-6" style="background:var(--bg)">
+  <div class="w-full max-w-sm space-y-5">
+    <div class="text-center mb-8">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white mx-auto mb-4" style="background:var(--accent)">D</div>
+      <h1 class="text-2xl font-black text-white tracking-tight">DQLP Console</h1>
+      <p class="text-xs mt-1 font-bold uppercase tracking-widest" style="color:var(--muted)">Universitas Muhammadiyah Malang</p>
+    </div>
+    <div class="card p-6 space-y-4">
+      <p class="text-xs font-black uppercase tracking-widest" style="color:var(--muted)">Token Admin</p>
+      <input type="password" id="tokenInput" placeholder="Masukkan token admin..."
+        class="w-full" onkeydown="if(event.key==='Enter') doLogin()">
+      <button onclick="doLogin()" class="btn btn-primary w-full">
+        <i class="fa-solid fa-shield-halved mr-2"></i>Masuk
+      </button>
+      <p id="loginErr" class="hidden text-xs text-center font-bold" style="color:var(--danger)"></p>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed z-[9999] right-5 top-5 max-w-xs w-full">
+  <div id="toastInner" class="flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-sm font-bold">
+    <i id="toastIcon" class="text-base flex-shrink-0"></i>
+    <span id="toastMsg"></span>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="confirmModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.7)">
+  <div class="card p-6 max-w-sm w-full text-center space-y-4">
+    <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto" style="background:rgba(245,158,11,0.15)">
+      <i class="fa-solid fa-circle-question text-xl" style="color:var(--warning)"></i>
+    </div>
+    <p id="confirmMsg" class="text-sm" style="color:var(--text)"></p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirm()" class="btn btn-ghost flex-1">Batal</button>
+      <button id="confirmYes" class="btn btn-primary flex-1">Konfirmasi</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loadingOverlay" class="hidden fixed inset-0 z-[300] flex flex-col items-center justify-center" style="background:rgba(15,17,23,0.85)">
+  <div class="loader mb-4" style="width:48px;height:48px;border-width:4px"></div>
+  <p id="loadingMsg" class="text-xs font-black uppercase tracking-widest" style="color:var(--muted)">Memproses...</p>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div id="mainLayout" class="hidden flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-56 flex-shrink-0 flex flex-col sticky top-0 h-screen border-r" style="background:var(--surface);border-color:var(--border)">
+    <div class="p-5 flex items-center gap-3 border-b" style="border-color:var(--border)">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center font-black text-lg text-white flex-shrink-0" style="background:var(--accent)">D</div>
+      <div>
+        <p class="text-sm font-black text-white">DQLP</p>
+        <p id="adminNama" class="text-[10px] font-bold" style="color:var(--muted)">Admin</p>
+      </div>
+    </div>
+    <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+      <button onclick="show('home',this)" class="nav-btn active w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-bold text-left text-white">
+        <i class="fa-solid fa-house w-4 text-center"></i>Dashboard
+      </button>
+      <p class="text-[9px] font-black uppercase tracking-widest px-3 pt-3 pb-1" style="color:var(--muted)">Monitoring</p>
+      <button onclick="show('rekap',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-table-list w-4 text-center"></i>Rekap Peserta
+      </button>
+      <button onclick="show('raw',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-satellite-dish w-4 text-center"></i>Raw Log
+      </button>
+      <p class="text-[9px] font-black uppercase tracking-widest px-3 pt-3 pb-1" style="color:var(--muted)">Sertifikat</p>
+      <button onclick="show('sertifikat',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-certificate w-4 text-center"></i>Generate Sertif
+      </button>
+      <button onclick="show('infokom',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-file-code w-4 text-center"></i>Data Infokom
+      </button>
+      <p class="text-[9px] font-black uppercase tracking-widest px-3 pt-3 pb-1" style="color:var(--muted)">Pengaturan</p>
+      <button onclick="show('kode',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-key w-4 text-center"></i>Kode & Jam
+      </button>
+      <button onclick="show('pengajar',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-chalkboard-user w-4 text-center"></i>Pengajar
+      </button>
+      <button onclick="show('skema',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-book w-4 text-center"></i>Skema
+      </button>
+      <button onclick="show('token',this)" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left" style="color:var(--muted)">
+        <i class="fa-solid fa-id-card w-4 text-center"></i>Token Harian
+      </button>
+    </nav>
+    <div class="p-3 border-t" style="border-color:var(--border)">
+      <button onclick="location.reload()" class="btn btn-ghost w-full text-xs">
+        <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i>Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="flex-1 flex flex-col min-w-0">
+    <header class="h-14 flex items-center justify-between px-6 border-b sticky top-0 z-30" style="background:var(--surface);border-color:var(--border)">
+      <h2 id="pageTitle" class="text-sm font-black text-white uppercase tracking-widest">Dashboard</h2>
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.05)">
+        <div class="w-1.5 h-1.5 rounded-full animate-pulse" style="background:var(--accent2)"></div>
+        <span class="text-[10px] font-black uppercase tracking-widest" style="color:var(--accent2)">Live</span>
+      </div>
+    </header>
+
+    <div class="flex-1 p-6 overflow-y-auto space-y-5">
+
+      <!-- HOME -->
+      <div id="home" class="tab-content active space-y-5">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="card p-5"><p class="text-[10px] font-black uppercase tracking-widest mb-2" style="color:var(--muted)">Total Peserta</p><h3 id="h-total" class="text-3xl font-black text-white">—</h3></div>
+          <div class="card p-5"><p class="text-[10px] font-black uppercase tracking-widest mb-2" style="color:var(--muted)">Presensi Hari Ini</p><h3 id="h-today" class="text-3xl font-black" style="color:var(--accent2)">—</h3></div>
+          <div class="card p-5"><p class="text-[10px] font-black uppercase tracking-widest mb-2" style="color:var(--muted)">Kelas / Skema</p><h3 id="h-skema" class="text-3xl font-black text-white">—</h3></div>
+          <div class="card p-5" style="background:var(--accent);border-color:var(--accent)">
+            <p class="text-[10px] font-black uppercase tracking-widest mb-2 text-blue-200">Update Terakhir</p>
+            <h3 id="h-time" class="text-xl font-black text-white">—</h3>
+            <button onclick="loadHome()" class="mt-3 w-full text-[10px] font-bold uppercase py-1.5 rounded-lg" style="background:rgba(255,255,255,0.2);color:white">
+              <i class="fa-solid fa-rotate mr-1"></i>Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Grafik unit & homebase -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-xs font-black uppercase tracking-widest text-white">Kepatuhan Unit</h4>
+              <input type="text" id="qUnit" onkeyup="fUnit()" placeholder="Cari..." style="padding:6px 10px;font-size:11px;width:120px">
+            </div>
+            <div style="height:200px"><canvas id="chartUnit"></canvas></div>
+            <div id="unitTable" class="mt-3 overflow-y-auto" style="max-height:140px;font-size:11px"></div>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-xs font-black uppercase tracking-widest text-white">Kepatuhan Homebase</h4>
+              <input type="text" id="qHb" onkeyup="fHb()" placeholder="Cari..." style="padding:6px 10px;font-size:11px;width:120px">
+            </div>
+            <div style="height:200px"><canvas id="chartHb"></canvas></div>
+            <div id="hbTable" class="mt-3 overflow-y-auto" style="max-height:140px;font-size:11px"></div>
+          </div>
+        </div>
+
+        <!-- Tren periode -->
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="text-xs font-black uppercase tracking-widest text-white">Tren Kehadiran Per Periode</h4>
+              <p class="text-[10px] mt-0.5" style="color:var(--muted)">Total, rata-rata, dan capaian target</p>
+            </div>
+            <button onclick="loadTren()" class="btn btn-ghost text-[10px]"><i class="fa-solid fa-rotate mr-1"></i>Refresh</button>
+          </div>
+          <div id="periodeSummary" class="grid grid-cols-3 gap-3 mb-5"></div>
+          <div style="height:220px"><canvas id="chartTren"></canvas></div>
+        </div>
+      </div>
+
+      <!-- REKAP -->
+      <div id="rekap" class="tab-content space-y-4">
+        <div class="card p-4 flex gap-3">
+          <input type="text" id="qRekap" onkeyup="fRekap()" placeholder="Cari NIP atau Nama..." class="flex-1">
+          <button onclick="loadRekap()" class="btn btn-primary"><i class="fa-solid fa-rotate mr-1"></i>Refresh</button>
+        </div>
+        <div class="card overflow-hidden"><div id="rekapT" class="overflow-x-auto" style="max-height:600px"></div></div>
+      </div>
+
+      <!-- RAW LOG -->
+      <div id="raw" class="tab-content space-y-4">
+        <div class="card p-4 flex justify-between items-center">
+          <div>
+            <h3 class="font-black text-white text-sm">Raw Monitoring</h3>
+            <p class="text-[10px] mt-0.5" style="color:var(--muted)">100 log terbaru</p>
+          </div>
+          <button onclick="loadRaw()" class="btn btn-ghost"><i class="fa-solid fa-satellite-dish mr-1"></i>Sync</button>
+        </div>
+        <div class="card overflow-hidden"><div id="rawT" class="overflow-x-auto" style="max-height:600px"></div></div>
+      </div>
+
+      <!-- GENERATE SERTIFIKAT -->
+      <div id="sertifikat" class="tab-content space-y-4">
+        <div class="card p-5 space-y-4">
+          <h3 class="font-black text-white text-sm uppercase tracking-widest">
+            <i class="fa-solid fa-certificate mr-2" style="color:var(--accent2)"></i>Generate Sertifikat
+          </h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Periode</label>
+              <select id="sertifPeriode" class="w-full" onchange="loadPesertaPeriode()">
+                <option value="">-- Pilih Periode --</option>
+                <option>Periode 1</option>
+                <option>Periode 2</option>
+                <option>Periode 3</option>
+                <option>Periode 4</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Filter</label>
+              <input type="text" id="qSertif" onkeyup="fSertif()" placeholder="Cari NIP atau Nama..." class="w-full">
+            </div>
+          </div>
+        </div>
+
+        <!-- Info status setting -->
+        <div id="sertifInfo" class="hidden"></div>
+
+        <!-- Tabel peserta -->
+        <div id="sertifT" class="card overflow-hidden">
+          <div class="p-8 text-center text-sm font-bold" style="color:var(--muted)">Pilih periode untuk melihat data peserta</div>
+        </div>
+
+        <!-- Tombol bulk generate -->
+        <div id="bulkGenBtn" class="hidden">
+          <button onclick="konfirmBulkGenerate()" class="btn btn-success w-full py-4 text-sm">
+            <i class="fa-solid fa-gears mr-2"></i>Generate Semua yang Belum Terbit
+          </button>
+        </div>
+      </div>
+
+      <!-- DATA INFOKOM -->
+      <div id="infokom" class="tab-content space-y-4">
+        <div class="card p-5 space-y-4">
+          <h3 class="font-black text-white text-sm uppercase tracking-widest">
+            <i class="fa-solid fa-file-code mr-2" style="color:var(--accent)"></i>Generate Data Infokom
+          </h3>
+          <div class="rounded-xl p-4" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2)">
+            <p class="text-xs font-bold" style="color:#93c5fd">
+              <i class="fa-solid fa-circle-info mr-2"></i>
+              Generate akan membuat/update sheet <span class="mono font-black">DATA_INFOKOM</span> di spreadsheet utama
+              dengan kolom: <span class="mono">nomor, nip, kegiatan, json</span>
+            </p>
+          </div>
+          <button onclick="konfirmGenerateJson()" class="btn btn-primary w-full py-4 text-sm">
+            <i class="fa-solid fa-code mr-2"></i>Generate JSON untuk Infokom
+          </button>
+        </div>
+        <div id="infokomResult" class="hidden card p-5"></div>
+        <div id="infokomLog" class="card overflow-hidden">
+          <div class="p-8 text-center text-sm font-bold" style="color:var(--muted)">Klik generate untuk melihat data</div>
+        </div>
+      </div>
+
+      <!-- KODE & JAM -->
+      <div id="kode" class="tab-content space-y-4">
+        <div class="card p-4 rounded-xl" style="background:rgba(245,158,11,0.05);border-color:rgba(245,158,11,0.2)">
+          <p class="text-xs font-medium" style="color:#fbbf24">
+            <i class="fa-solid fa-circle-info mr-2"></i>
+            Hanya satu periode yang boleh aktif. Toggle untuk buka/tutup sesi presensi.
+          </p>
+        </div>
+        <div class="card overflow-hidden"><div id="kodeT"></div></div>
+      </div>
+
+      <!-- PENGAJAR -->
+      <div id="pengajar" class="tab-content space-y-4">
+        <div class="card p-5 space-y-4">
+          <h3 class="font-black text-white text-sm uppercase tracking-widest"><i class="fa-solid fa-chalkboard-user mr-2" style="color:var(--accent)"></i>Manajemen Pengajar</h3>
+          <div class="grid grid-cols-3 gap-3">
+            <input type="hidden" id="pr">
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Email</label><input id="pe" class="w-full"></div>
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Nama</label><input id="pn" class="w-full"></div>
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Status</label><select id="pa" class="w-full"><option>YA</option><option>TIDAK</option></select></div>
+          </div>
+          <button onclick="konfirm('pengajar')" class="btn btn-primary"><i class="fa-solid fa-floppy-disk mr-2"></i>Update Pengajar</button>
+        </div>
+        <div class="card overflow-hidden"><div id="pengajarT" class="overflow-x-auto" style="max-height:500px"></div></div>
+      </div>
+
+      <!-- SKEMA -->
+      <div id="skema" class="tab-content space-y-4">
+        <div class="card p-5 space-y-4">
+          <h3 class="font-black text-white text-sm uppercase tracking-widest"><i class="fa-solid fa-book mr-2" style="color:var(--accent)"></i>Email Pengajar Skema</h3>
+          <div class="grid grid-cols-3 gap-3">
+            <input type="hidden" id="sr">
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Skema</label><input id="ss" readonly class="w-full" style="opacity:0.6"></div>
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Pengajar</label><input id="sn" readonly class="w-full" style="opacity:0.6"></div>
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Email Baru</label><input id="se" class="w-full"></div>
+          </div>
+          <button onclick="konfirm('skema')" class="btn btn-success"><i class="fa-solid fa-floppy-disk mr-2"></i>Update Email</button>
+        </div>
+        <div class="card overflow-hidden"><div id="skemaT" class="overflow-x-auto" style="max-height:500px"></div></div>
+      </div>
+
+      <!-- TOKEN -->
+      <div id="token" class="tab-content space-y-4">
+        <div class="card p-5 space-y-4">
+          <h3 class="font-black text-white text-sm uppercase tracking-widest"><i class="fa-solid fa-id-card mr-2" style="color:var(--accent)"></i>Terbitkan Token Harian</h3>
+          <div class="grid grid-cols-4 gap-3">
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Token</label><input id="tt" class="w-full mono" placeholder="ABC123..."></div>
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Berlaku</label><input type="date" id="tb" class="w-full"></div>
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Status</label><select id="ts" class="w-full"><option>AKTIF</option><option>NONAKTIF</option></select></div>
+            <div><label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Catatan</label><input id="tc" class="w-full"></div>
+          </div>
+          <button onclick="saveToken()" class="btn btn-primary"><i class="fa-solid fa-plus mr-2"></i>Terbitkan Token</button>
+        </div>
+        <div class="card overflow-hidden"><div id="tokenT" class="overflow-x-auto" style="max-height:500px"></div></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  const API = 'https://script.google.com/macros/s/AKfycbxplpLBevNDxvPAchwesXszGivyV8cf5dy9e8EkhHLAyNB4BsscmS0TxSCA5tXTJKgOLw/exec';
+  let TOKEN = '', ADMIN_NAMA = '';
+  let dUnit=[], dHb=[], dRekap=[], dPengajar={}, dSkema={}, dKode={};
+  let dSertifAll=[], dSertifFiltered=[];
+  let chartUnit, chartHb, chartTren;
+
+  /* ===== FETCH ===== */
+  async function api(params, timeout=20000) {
+    const ctrl = new AbortController();
+    const id   = setTimeout(() => ctrl.abort(), timeout);
+    try {
+      const url = `${API}?${new URLSearchParams({...params, token: TOKEN})}`;
+      const r   = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(id);
+      return await r.json();
+    } catch(e) {
+      clearTimeout(id);
+      throw e;
+    }
+  }
+
+  /* ===== LOGIN ===== */
+  async function doLogin() {
+    const t = document.getElementById('tokenInput').value.trim();
+    if (!t) return;
+    const btn = document.querySelector('#loginScreen button');
+    btn.disabled = true; btn.textContent = 'Memeriksa...';
+    try {
+      const r = await api({ action: 'cek_token', token: t });
+      if (r.valid) {
+        TOKEN = t; ADMIN_NAMA = r.nama || 'Admin';
+        document.getElementById('adminNama').textContent = ADMIN_NAMA;
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainLayout').classList.remove('hidden');
+        document.getElementById('mainLayout').classList.add('flex');
+        loadHome();
+      } else {
+        document.getElementById('loginErr').textContent = 'Token tidak valid.';
+        document.getElementById('loginErr').classList.remove('hidden');
+      }
+    } catch(e) {
+      document.getElementById('loginErr').textContent = 'Gagal terhubung ke server.';
+      document.getElementById('loginErr').classList.remove('hidden');
+    } finally {
+      btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-shield-halved mr-2"></i>Masuk';
+    }
+  }
+
+  /* ===== NAVIGASI ===== */
+  function show(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      b.classList.remove('active','text-white');
+      b.style.color = 'var(--muted)';
+    });
+    btn.classList.add('active');
+    btn.style.color = 'white';
+    document.getElementById('pageTitle').textContent = btn.textContent.trim();
+    const loaders = { home:'loadHome', rekap:'loadRekap', raw:'loadRaw', kode:'loadKode', pengajar:'loadPengajar', skema:'loadSkema', token:'loadToken' };
+    if (loaders[id]) window[loaders[id]]();
+  }
+
+  /* ===== TOAST ===== */
+  let toastTimer;
+  function toast(msg, type='success') {
+    const el = document.getElementById('toast');
+    const inner = document.getElementById('toastInner');
+    const icon  = document.getElementById('toastIcon');
+    document.getElementById('toastMsg').textContent = msg;
+    clearTimeout(toastTimer);
+    if (type === 'success') {
+      inner.style.cssText = 'background:#059669;color:white;display:flex;align-items:center;gap:12px;padding:14px 20px;border-radius:12px';
+      icon.className = 'fa-solid fa-circle-check text-base flex-shrink-0';
+    } else {
+      inner.style.cssText = 'background:#dc2626;color:white;display:flex;align-items:center;gap:12px;padding:14px 20px;border-radius:12px';
+      icon.className = 'fa-solid fa-circle-xmark text-base flex-shrink-0';
+    }
+    el.classList.remove('hidden');
+    toastTimer = setTimeout(() => el.classList.add('hidden'), 3500);
+  }
+
+  /* ===== CONFIRM ===== */
+  function konfirm(type) {
+    const msgs = {
+      pengajar: `Update pengajar "${document.getElementById('pn').value}"?`,
+      skema   : `Update email skema "${document.getElementById('ss').value}"?`
+    };
+    document.getElementById('confirmMsg').textContent = msgs[type] || 'Simpan perubahan?';
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.getElementById('confirmYes').onclick = () => { closeConfirm(); if(type==='pengajar') savePengajar(); if(type==='skema') saveSkema(); };
+  }
+  function closeConfirm() { document.getElementById('confirmModal').classList.add('hidden'); }
+  function overlay(show, msg='Memproses...') {
+    document.getElementById('loadingMsg').textContent = msg;
+    document.getElementById('loadingOverlay').classList[show?'remove':'add']('hidden');
+  }
+
+  /* ===== TABEL HELPER ===== */
+  function badge(s) {
+    const u = (s||'').toString().toUpperCase();
+    const map = { 'VALID':'badge-green','HADIR':'badge-blue','IZIN':'badge-amber','TIDAK HADIR':'badge-red','HADIR_KEBIJAKAN':'badge-slate','YA':'badge-green','TIDAK':'badge-red','AKTIF':'badge-green','NONAKTIF':'badge-red' };
+    const label = { 'VALID':'Valid','HADIR':'Hadir','IZIN':'Izin','TIDAK HADIR':'Tdk Hadir','HADIR_KEBIJAKAN':'Kebijakan','YA':'YA','TIDAK':'TIDAK','AKTIF':'Aktif','NONAKTIF':'Nonaktif' };
+    const cls = map[u] || 'badge-slate';
+    return `<span class="badge ${cls}">${label[u] || s || '—'}</span>`;
+  }
+
+  function tabel(data, cols, editFn) {
+    if (!data || !data.length) return '<div class="p-10 text-center text-sm font-bold" style="color:var(--muted)">Tidak ada data.</div>';
+    let h = '<table><thead><tr>';
+    cols.forEach(c => h += `<th>${c}</th>`);
+    if (editFn) h += '<th>Aksi</th>';
+    h += '</tr></thead><tbody>';
+    data.forEach(r => {
+      h += '<tr>';
+      cols.forEach(c => {
+        const v = r[c] !== undefined ? r[c] : '—';
+        const isS = ['status','aktif'].includes(c);
+        h += `<td>${isS ? badge(v) : (v || '—')}</td>`;
+      });
+      if (editFn) h += `<td><button onclick="${editFn}(${r.row})" style="color:var(--accent);font-size:10px;font-weight:700;background:none;border:none;cursor:pointer;text-transform:uppercase">Edit</button></td>`;
+      h += '</tr>';
+    });
+    return h + '</tbody></table>';
+  }
+
+  /* ===== HOME ===== */
+  async function loadHome() {
+    try {
+      const d = await api({ action: 'get_overview' });
+      document.getElementById('h-total').textContent = d.totalPeserta || '—';
+      document.getElementById('h-today').textContent = d.presensiToday || '0';
+      document.getElementById('h-skema').textContent = d.totalSkema || '—';
+      document.getElementById('h-time').textContent  = d.updateTime || '—';
+    } catch(e) {}
+
+    // Unit
+    try {
+      const d = await api({ action: 'get_grafik_unit' });
+      dUnit = d;
+      renderBarChart('chartUnit', d.slice(0,10), '#10b981');
+      renderAnalyticsTable(d, 'unitTable');
+    } catch(e) {}
+
+    // Homebase
+    try {
+      const d = await api({ action: 'get_grafik_homebase' });
+      dHb = d;
+      renderBarChart('chartHb', d.slice(0,10), '#3b82f6');
+      renderAnalyticsTable(d, 'hbTable');
+    } catch(e) {}
+
+    loadTren();
+  }
+
+  async function loadTren() {
+    try {
+      const d = await api({ action: 'get_grafik_periode' });
+      if (!d.labels) return;
+      const { labels, totalHadir, rataHadir, pctHadir, targetPerPeriode } = d;
+
+      // Summary cards
+      document.getElementById('periodeSummary').innerHTML = labels.map((l,i) => {
+        const pct = Math.min(pctHadir[i], 100);
+        const clr = pct >= 80 ? 'var(--accent2)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+        return `<div class="card p-4">
+          <p class="text-[10px] font-black uppercase tracking-widest mb-3" style="color:var(--muted)">${l}</p>
+          <p class="text-xl font-black text-white">${totalHadir[i]}</p>
+          <p class="text-[10px] mt-0.5 mb-3" style="color:var(--muted)">Total hadir</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${clr}"></div></div>
+          <p class="text-[10px] mt-1.5 font-black" style="color:${clr}">${pctHadir[i]}% capaian</p>
+        </div>`;
+      }).join('');
+
+      // Chart
+      if (chartTren) chartTren.destroy();
+      chartTren = new Chart(document.getElementById('chartTren'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label:'Total Hadir', data:totalHadir, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)', borderWidth:2, pointRadius:4, tension:0.4, fill:true, yAxisID:'y' },
+            { label:'Target', data:labels.map(()=>targetPerPeriode), borderColor:'rgba(100,116,139,0.4)', borderWidth:1.5, pointRadius:0, borderDash:[5,4], tension:0, yAxisID:'y' },
+            { label:'Rata-rata/Peserta', data:rataHadir, borderColor:'#3b82f6', borderWidth:2, pointRadius:3, tension:0.4, yAxisID:'y2' }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins: { legend:{ display:false }, tooltip:{ backgroundColor:'#1e2436', padding:10, cornerRadius:8 } },
+          scales: {
+            y:  { type:'linear', position:'left',  grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#64748b',font:{size:10}} },
+            y2: { type:'linear', position:'right', grid:{drawOnChartArea:false}, ticks:{color:'#3b82f6',font:{size:10}} },
+            x:  { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#64748b',font:{size:10}} }
+          }
+        }
+      });
+    } catch(e) {}
+  }
+
+  function renderBarChart(id, data, color) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id === 'chartUnit' && chartUnit) chartUnit.destroy();
+    if (id === 'chartHb'   && chartHb)   chartHb.destroy();
+    const ch = new Chart(el, {
+      type: 'bar',
+      data: { labels: data.map(x=>x.label), datasets: [{ data: data.map(x=>x.rasio), backgroundColor: color, borderRadius:4 }] },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{max:100, ticks:{color:'#64748b',font:{size:9}}, grid:{color:'rgba(255,255,255,0.04)'}}, y:{ticks:{color:'#94a3b8',font:{size:9}}, grid:{display:false}} } }
+    });
+    if (id === 'chartUnit') chartUnit = ch;
+    if (id === 'chartHb')   chartHb   = ch;
+  }
+
+  function renderAnalyticsTable(data, tid) {
+    document.getElementById(tid).innerHTML = data.map(i => {
+      const p = parseFloat(i.rasio);
+      const c = p>=80 ? '#34d399' : p>=50 ? '#fbbf24' : '#f87171';
+      return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+        <span style="color:#94a3b8;font-size:10px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.label}</span>
+        <span style="font-size:10px;font-weight:700;color:${c};white-space:nowrap;margin-left:8px">${i.rasio}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  function fUnit() { renderAnalyticsTable(dUnit.filter(x=>x.label.toLowerCase().includes(document.getElementById('qUnit').value.toLowerCase())),'unitTable'); }
+  function fHb()   { renderAnalyticsTable(dHb.filter(x=>x.label.toLowerCase().includes(document.getElementById('qHb').value.toLowerCase())),'hbTable'); }
+
+  /* ===== REKAP ===== */
+  async function loadRekap() {
+    document.getElementById('rekapT').innerHTML = '<div class="p-10 text-center text-sm animate-pulse" style="color:var(--muted)">Memuat rekap...</div>';
+    try {
+      const d = await api({ action: 'get_rekap_presensi' });
+      dRekap = d;
+      if (d.length > 0) document.getElementById('rekapT').innerHTML = tabel(d, Object.keys(d[0]));
+      else document.getElementById('rekapT').innerHTML = '<div class="p-10 text-center text-sm" style="color:var(--muted)">Tidak ada data.</div>';
+    } catch(e) { document.getElementById('rekapT').innerHTML = '<div class="p-10 text-center text-sm" style="color:var(--danger)">Gagal memuat data.</div>'; }
+  }
+  function fRekap() {
+    const q = document.getElementById('qRekap').value.toLowerCase();
+    const f = dRekap.filter(x => String(x.nip||'').toLowerCase().includes(q) || String(x.nama||'').toLowerCase().includes(q));
+    if (dRekap.length > 0) document.getElementById('rekapT').innerHTML = tabel(f, Object.keys(dRekap[0]));
+  }
+
+  /* ===== RAW ===== */
+  async function loadRaw() {
+    document.getElementById('rawT').innerHTML = '<div class="p-10 text-center text-sm animate-pulse" style="color:var(--muted)">Syncing...</div>';
+    try {
+      const d = await api({ action: 'get_raw_monitoring' });
+      document.getElementById('rawT').innerHTML = tabel(d, ['ts','nip','nama','skema','periode','status','val_by']);
+    } catch(e) { toast('Gagal sync log.','error'); }
+  }
+
+  /* ===== SERTIFIKAT ===== */
+  async function loadPesertaPeriode() {
+    const periode = document.getElementById('sertifPeriode').value;
+    if (!periode) return;
+    document.getElementById('sertifT').innerHTML = '<div class="p-10 text-center text-sm animate-pulse" style="color:var(--muted)">Memuat peserta...</div>';
+    document.getElementById('bulkGenBtn').classList.add('hidden');
+    document.getElementById('sertifInfo').classList.add('hidden');
+
+    try {
+      const d = await api({ action: 'peserta_periode', periode, kegiatan: 'DQLP' });
+      if (d.status !== 'ok') { toast(d.message || 'Gagal.','error'); return; }
+
+      dSertifAll = d.peserta;
+      dSertifFiltered = [...dSertifAll];
+
+      const belumTerbit = dSertifAll.filter(p => !p.sudah_terbit).length;
+      document.getElementById('sertifInfo').innerHTML = `
+        <div class="card p-4 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <span class="badge ${d.setting_aktif ? 'badge-green' : 'badge-red'}">${d.setting_aktif ? 'Setting Aktif' : 'Setting Nonaktif'}</span>
+            <span class="text-sm font-black text-white">${d.peserta.length} Peserta</span>
+            <span class="text-sm font-bold" style="color:var(--warning)">${belumTerbit} Belum Terbit</span>
+            <span class="text-sm font-bold" style="color:var(--accent2)">${d.peserta.length - belumTerbit} Sudah Terbit</span>
+          </div>
+        </div>`;
+      document.getElementById('sertifInfo').classList.remove('hidden');
+
+      renderSertifTabel(dSertifFiltered);
+      if (belumTerbit > 0) document.getElementById('bulkGenBtn').classList.remove('hidden');
+
+    } catch(e) { toast('Gagal memuat data.','error'); }
+  }
+
+  function fSertif() {
+    const q = document.getElementById('qSertif').value.toLowerCase();
+    dSertifFiltered = dSertifAll.filter(x => String(x.nip||'').toLowerCase().includes(q) || String(x.nama||'').toLowerCase().includes(q));
+    renderSertifTabel(dSertifFiltered);
+  }
+
+  function renderSertifTabel(data) {
+    if (!data.length) { document.getElementById('sertifT').innerHTML = '<div class="p-10 text-center text-sm" style="color:var(--muted)">Tidak ada data.</div>'; return; }
+    let h = '<table><thead><tr><th>NIP</th><th>Nama</th><th>Skema</th><th>Total Hadir</th><th>Status</th><th>Aksi</th></tr></thead><tbody>';
+    data.forEach(p => {
+      const s = p.sudah_terbit;
+      h += `<tr>
+        <td class="mono text-xs">${p.nip}</td>
+        <td class="font-semibold">${p.nama}</td>
+        <td>${p.skema || '—'}</td>
+        <td class="text-center font-black" style="color:${p.total >= 10 ? 'var(--accent2)' : 'var(--muted)'}">${p.total}</td>
+        <td>${s ? '<span class="badge badge-green">Terbit</span>' : '<span class="badge badge-amber">Belum</span>'}</td>
+        <td>${!s ? `<button onclick="generateSatu('${p.nip}','${p.nama}')" class="btn btn-success" style="padding:5px 12px;font-size:10px">Generate</button>` : '—'}</td>
+      </tr>`;
+    });
+    document.getElementById('sertifT').innerHTML = h + '</tbody></table>';
+  }
+
+  async function generateSatu(nip, nama) {
+    const periode = document.getElementById('sertifPeriode').value;
+    if (!confirm(`Generate sertifikat untuk ${nama}?`)) return;
+    overlay(true, 'Generating sertifikat...');
+    try {
+      const d = await api({ action:'generate_sertifikat', kegiatan:'DQLP', kode:nip, periode }, 60000);
+      overlay(false);
+      if (d.status === 'ok') { toast(`✓ Sertifikat ${nama} berhasil diterbitkan.`); loadPesertaPeriode(); }
+      else toast(d.message || 'Gagal.','error');
+    } catch(e) { overlay(false); toast('Gagal generate.','error'); }
+  }
+
+  function konfirmBulkGenerate() {
+    const periode  = document.getElementById('sertifPeriode').value;
+    const belum    = dSertifAll.filter(p => !p.sudah_terbit);
+    document.getElementById('confirmMsg').textContent = `Generate sertifikat untuk ${belum.length} peserta di ${periode}? Proses ini membutuhkan waktu cukup lama.`;
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.getElementById('confirmYes').onclick = () => { closeConfirm(); bulkGenerate(); };
+  }
+
+  async function bulkGenerate() {
+    const periode = document.getElementById('sertifPeriode').value;
+    const belum   = dSertifAll.filter(p => !p.sudah_terbit);
+    let sukses = 0, gagal = 0;
+
+    overlay(true, `Generating 0 / ${belum.length}...`);
+    for (let i = 0; i < belum.length; i++) {
+      document.getElementById('loadingMsg').textContent = `Generating ${i+1} / ${belum.length}... (${belum[i].nama})`;
+      try {
+        const d = await api({ action:'generate_sertifikat', kegiatan:'DQLP', kode:belum[i].nip, periode }, 90000);
+        if (d.status === 'ok') sukses++; else gagal++;
+      } catch(e) { gagal++; }
+      await new Promise(r => setTimeout(r, 1000)); // jeda 1 detik antar request
+    }
+    overlay(false);
+    toast(`Selesai! ${sukses} berhasil, ${gagal} gagal.`, gagal > 0 ? 'error' : 'success');
+    loadPesertaPeriode();
+  }
+
+  /* ===== DATA INFOKOM ===== */
+  function konfirmGenerateJson() {
+    document.getElementById('confirmMsg').textContent = 'Generate data JSON untuk infokom? Sheet DATA_INFOKOM akan diupdate.';
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.getElementById('confirmYes').onclick = () => { closeConfirm(); generateJson(); };
+  }
+
+  async function generateJson() {
+    overlay(true, 'Generating JSON...');
+    try {
+      const d = await api({ action:'generate_json_infokom', kegiatan:'DQLP' });
+      overlay(false);
+      if (d.status === 'ok') {
+        toast(`✓ ${d.message}`);
+        document.getElementById('infokomResult').innerHTML = `
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-circle-check text-xl" style="color:var(--accent2)"></i>
+            <div>
+              <p class="font-black text-white">${d.message}</p>
+              <p class="text-xs mt-0.5" style="color:var(--muted)">Sheet DATA_INFOKOM telah diupdate di spreadsheet utama</p>
+            </div>
+          </div>`;
+        document.getElementById('infokomResult').classList.remove('hidden');
+        loadLogSertifikat();
+      } else {
+        toast(d.message || 'Gagal.','error');
+      }
+    } catch(e) { overlay(false); toast('Gagal generate JSON.','error'); }
+  }
+
+  async function loadLogSertifikat() {
+    try {
+      // Tampilkan preview LOG_SERTIFIKAT dari raw monitoring
+      const d = await api({ action:'get_log_sertifikat' });
+      if (d && d.length > 0) {
+        document.getElementById('infokomLog').innerHTML = tabel(d, ['nip','nama','skema','periode','nomor','tanggal']);
+      }
+    } catch(e) {}
+  }
+
+  /* ===== KODE ===== */
+  async function loadKode() {
+    document.getElementById('kodeT').innerHTML = '<div class="p-10 text-center text-sm animate-pulse" style="color:var(--muted)">Memuat...</div>';
+    try {
+      const d = await api({ action:'get_kode' });
+      dKode = d.reduce((o,x) => (o[x.row]=x, o), {});
+      let h = '<div>';
+      d.forEach(k => {
+        const aktif = k.aktif === 'YA';
+        h += `<div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <span style="font-weight:800;color:white;font-size:14px">${k.periode}</span>
+                <span class="badge ${aktif ? 'badge-green':'badge-slate'}">${aktif ? 'Aktif':'Nonaktif'}</span>
+              </div>
+              <div style="font-size:11px;color:var(--muted);font-weight:600">
+                <span id="kodeVal-${k.row}" class="mono">${k.kode || '—'}</span>
+                <span style="margin:0 8px">·</span>
+                <span>${k.buka || '—'} – ${k.tutup || '—'}</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button onclick="editKode(${k.row})" class="btn btn-ghost" style="padding:6px 12px;font-size:10px">Edit Kode</button>
+              <button onclick="toggleKode(${k.row}, '${aktif?'TIDAK':'YA'}')"
+                style="width:44px;height:24px;border-radius:99px;border:none;cursor:pointer;transition:all 0.2s;position:relative;background:${aktif?'var(--accent2)':'var(--border)'}">
+                <span style="width:18px;height:18px;background:white;border-radius:50%;position:absolute;top:3px;transition:all 0.2s;${aktif ? 'right:3px':'left:3px'}"></span>
+              </button>
+            </div>
+          </div>
+          <div id="editKode-${k.row}" style="display:none;margin-top:12px;display:none">
+            <div style="display:flex;gap:8px">
+              <input id="inputKode-${k.row}" class="flex-1 mono" value="${k.kode||''}" placeholder="Kode baru...">
+              <button onclick="simpanKode(${k.row})" class="btn btn-primary">Simpan</button>
+              <button onclick="document.getElementById('editKode-${k.row}').style.display='none'" class="btn btn-ghost">Batal</button>
+            </div>
+          </div>
+        </div>`;
+      });
+      document.getElementById('kodeT').innerHTML = h + '</div>';
+    } catch(e) { toast('Gagal load kode.','error'); }
+  }
+
+  function editKode(row) {
+    document.querySelectorAll('[id^="editKode-"]').forEach(e => e.style.display='none');
+    document.getElementById(`editKode-${row}`).style.display = 'block';
+    document.getElementById(`inputKode-${row}`).focus();
+  }
+
+  async function simpanKode(row) {
+    const kode = document.getElementById(`inputKode-${row}`).value.trim();
+    if (!kode) return toast('Kode tidak boleh kosong.','error');
+    const d = dKode[row];
+    overlay(true,'Menyimpan kode...');
+    try {
+      const r = await api({ action:'update_kode', row, periode:d.periode, ket:d.ket, kode, aktif:d.aktif, buka:d.buka, tutup:d.tutup });
+      overlay(false); toast(r); loadKode();
+    } catch(e) { overlay(false); toast('Gagal simpan kode.','error'); }
+  }
+
+  async function toggleKode(row, statusBaru) {
+    const d = dKode[row];
+    const msg = statusBaru==='YA' ? `Aktifkan "${d.periode}"?` : `Nonaktifkan "${d.periode}"?`;
+    document.getElementById('confirmMsg').textContent = msg;
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.getElementById('confirmYes').onclick = async () => {
+      closeConfirm(); overlay(true);
+      try {
+        const r = await api({ action:'update_kode', row, periode:d.periode, ket:d.ket, kode:d.kode, aktif:statusBaru, buka:d.buka, tutup:d.tutup });
+        overlay(false); toast(r); loadKode();
+      } catch(e) { overlay(false); toast('Gagal.','error'); }
+    };
+  }
+
+  /* ===== PENGAJAR ===== */
+  async function loadPengajar() {
+    try {
+      const d = await api({ action:'get_pengajar' });
+      dPengajar = d.reduce((o,x)=>(o[x.row]=x,o),{});
+      document.getElementById('pengajarT').innerHTML = tabel(d, ['email','nama','aktif'], 'editP');
+    } catch(e) { toast('Gagal load pengajar.','error'); }
+  }
+  function editP(r) {
+    const d = dPengajar[r];
+    document.getElementById('pr').value = r;
+    document.getElementById('pe').value = d.email;
+    document.getElementById('pn').value = d.nama;
+    document.getElementById('pa').value = d.aktif;
+    toast('Data siap diedit.');
+  }
+  async function savePengajar() {
+    overlay(true,'Menyimpan...');
+    try {
+      const r = await api({ action:'update_pengajar', row:document.getElementById('pr').value, email:document.getElementById('pe').value, nama:document.getElementById('pn').value, aktif:document.getElementById('pa').value });
+      overlay(false); toast(r); loadPengajar();
+    } catch(e) { overlay(false); toast('Gagal.','error'); }
+  }
+
+  /* ===== SKEMA ===== */
+  async function loadSkema() {
+    try {
+      const d = await api({ action:'get_skema' });
+      dSkema = d.reduce((o,x)=>(o[x.row]=x,o),{});
+      document.getElementById('skemaT').innerHTML = tabel(d, ['skema','nama','email'], 'editS');
+    } catch(e) { toast('Gagal load skema.','error'); }
+  }
+  function editS(r) {
+    const d = dSkema[r];
+    document.getElementById('sr').value = r;
+    document.getElementById('ss').value = d.skema;
+    document.getElementById('sn').value = d.nama;
+    document.getElementById('se').value = d.email;
+    toast('Email siap diupdate.');
+  }
+  async function saveSkema() {
+    overlay(true,'Menyimpan...');
+    try {
+      const r = await api({ action:'update_skema_email', row:document.getElementById('sr').value, email:document.getElementById('se').value, skema_nama:document.getElementById('ss').value });
+      overlay(false); toast(r); loadSkema();
+    } catch(e) { overlay(false); toast('Gagal.','error'); }
+  }
+
+  /* ===== TOKEN ===== */
+  async function loadToken() {
+    try {
+      const d = await api({ action:'get_token_master' });
+      document.getElementById('tokenT').innerHTML = tabel(d, ['token','berlaku','status','catatan']);
+    } catch(e) { toast('Gagal load token.','error'); }
+  }
+  async function saveToken() {
+    const t = document.getElementById('tt').value;
+    const b = document.getElementById('tb').value;
+    if (!t || !b) return toast('Lengkapi token dan tanggal.','error');
+    overlay(true,'Menerbitkan token...');
+    try {
+      const r = await api({ action:'add_token_master', token:t, berlaku:b, status:document.getElementById('ts').value, catatan:document.getElementById('tc').value });
+      overlay(false); toast(r);
+      document.getElementById('tt').value = '';
+      document.getElementById('tb').value = '';
+      loadToken();
+    } catch(e) { overlay(false); toast('Gagal.','error'); }
+  }
+</script>
+</body>
+</html>
