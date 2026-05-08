@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg: #0f1117; --surface: #181c27; --surface2: #1e2436;
@@ -319,11 +320,16 @@
             <h4 class="text-xs font-black uppercase tracking-widest text-white">
               <i class="fa-solid fa-server mr-2" style="color:var(--accent)"></i>Status Generate Background
             </h4>
-            <button onclick="cekQueue()" class="btn btn-ghost" style="padding:5px 12px;font-size:10px">
-              <i class="fa-solid fa-rotate mr-1"></i>Refresh
-            </button>
+            <div class="flex gap-2">
+              <button onclick="cekQueue()" class="btn btn-ghost" style="padding:5px 12px;font-size:10px">
+                <i class="fa-solid fa-rotate mr-1"></i>Refresh
+              </button>
+              <button onclick="konfirmBatalQueue()" class="btn btn-danger" style="padding:5px 12px;font-size:10px">
+                <i class="fa-solid fa-stop mr-1"></i>Batalkan
+              </button>
+            </div>
           </div>
-          <div id="queueBar" class="progress-bar"><div id="queueFill" class="progress-fill" style="width:0%;background:var(--accent2)"></div></div>
+          <div class="progress-bar"><div id="queueFill" class="progress-fill" style="width:0%;background:var(--accent2)"></div></div>
           <div class="flex gap-4 text-xs font-bold flex-wrap">
             <span style="color:var(--accent2)"><i class="fa-solid fa-circle-check mr-1"></i><span id="qSelesai">0</span> Selesai</span>
             <span style="color:var(--danger)"><i class="fa-solid fa-circle-xmark mr-1"></i><span id="qGagal">0</span> Gagal</span>
@@ -331,6 +337,9 @@
             <span style="color:var(--muted)">Total: <span id="qTotal">0</span></span>
             <span style="color:var(--accent)" class="font-black"><span id="qPct">0</span>%</span>
           </div>
+          <p id="qStatusMsg" class="text-[10px] font-bold" style="color:var(--muted)">
+            Auto-refresh setiap 30 detik selama ada antrian berjalan
+          </p>
         </div>
 
         <!-- Modal Background Generate -->
@@ -381,9 +390,14 @@
               dengan kolom: <span class="mono">nomor, nip, kegiatan, json</span>
             </p>
           </div>
-          <button onclick="konfirmGenerateJson()" class="btn btn-primary w-full py-4 text-sm">
-            <i class="fa-solid fa-code mr-2"></i>Generate JSON untuk Infokom
-          </button>
+          <div class="flex gap-3">
+            <button onclick="konfirmGenerateJson()" class="btn btn-primary flex-1 py-4 text-sm">
+              <i class="fa-solid fa-code mr-2"></i>Generate JSON untuk Infokom
+            </button>
+            <button id="btnExportExcel" onclick="exportExcel()" class="btn btn-success hidden py-4 text-sm" style="white-space:nowrap">
+              <i class="fa-solid fa-file-excel mr-2"></i>Export Excel
+            </button>
+          </div>
         </div>
         <div id="infokomResult" class="hidden card p-5"></div>
         <div id="infokomLog" class="card overflow-hidden">
@@ -828,6 +842,8 @@
   }
 
   /* ===== DATA INFOKOM ===== */
+  let dataInfokom = []; // simpan data hasil generate untuk export
+
   function konfirmGenerateJson() {
     document.getElementById('confirmMsg').textContent = 'Generate data JSON untuk infokom? Sheet DATA_INFOKOM akan diupdate.';
     document.getElementById('confirmModal').classList.remove('hidden');
@@ -850,7 +866,8 @@
             </div>
           </div>`;
         document.getElementById('infokomResult').classList.remove('hidden');
-        loadLogSertifikat();
+        document.getElementById('btnExportExcel').classList.remove('hidden');
+        await loadLogSertifikat();
       } else {
         toast(d.message || 'Gagal.','error');
       }
@@ -859,12 +876,71 @@
 
   async function loadLogSertifikat() {
     try {
-      // Tampilkan preview LOG_SERTIFIKAT dari raw monitoring
-      const d = await api({ action:'get_log_sertifikat' });
+      const d = await api({ action:'get_infokom_data' });
       if (d && d.length > 0) {
-        document.getElementById('infokomLog').innerHTML = tabel(d, ['nip','nama','skema','periode','nomor','tanggal']);
+        dataInfokom = d;
+        document.getElementById('infokomLog').innerHTML = tabel(d, ['nomor','nip','nama','skema','periode','tanggal_mulai','tanggal_selesai','nomor_sertifikat']);
+        document.getElementById('btnExportExcel').classList.remove('hidden');
       }
     } catch(e) {}
+  }
+
+  function exportExcel() {
+    if (!dataInfokom.length) return toast('Tidak ada data untuk diexport.','error');
+
+    // Buat worksheet dengan format sesuai template infokom
+    // Kolom: nomor, nip, kegiatan, json (sesuai template)
+    // + sheet tambahan dengan detail field
+    const rows = [];
+
+    // Header sheet utama (sesuai template infokom)
+    rows.push(['nomor', 'nip', 'kegiatan', 'json']);
+
+    dataInfokom.forEach(r => {
+      const jsonObj = {
+        nama_pelatihan  : r.nama_pelatihan || '',
+        penyelenggara   : r.penyelenggara  || '',
+        tingkat         : r.tingkat        || '',
+        tanggal_mulai   : r.tanggal_mulai  || '',
+        tanggal_selesai : r.tanggal_selesai|| '',
+        nomor_sertifikat: r.nomor_sertifikat|| '',
+        link_pdf        : r.link_pdf       || '',
+        token_validasi  : r.token_validasi || '',
+        total_hadir     : r.total_hadir    || 0,
+        periode         : r.periode        || ''
+      };
+      rows.push([r.nomor, r.nip, r.kegiatan, JSON.stringify(jsonObj)]);
+    });
+
+    // Buat juga sheet detail yang mudah dibaca
+    const rowsDetail = [];
+    rowsDetail.push(['No','NIP','Nama','Skema','Periode','Nama Pelatihan','Penyelenggara','Tingkat','Tanggal Mulai','Tanggal Selesai','Nomor Sertifikat','Total Hadir','Link PDF']);
+    dataInfokom.forEach((r, i) => {
+      rowsDetail.push([
+        i+1, r.nip, r.nama, r.skema, r.periode,
+        r.nama_pelatihan, r.penyelenggara, r.tingkat,
+        r.tanggal_mulai, r.tanggal_selesai, r.nomor_sertifikat,
+        r.total_hadir, r.link_pdf
+      ]);
+    });
+
+    // Generate Excel dengan dua sheet menggunakan SheetJS
+    const wb  = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.aoa_to_sheet(rows);
+    const ws2 = XLSX.utils.aoa_to_sheet(rowsDetail);
+
+    // Set lebar kolom
+    ws1['!cols'] = [{ wch:8 },{ wch:20 },{ wch:25 },{ wch:80 }];
+    ws2['!cols'] = [{ wch:5 },{ wch:20 },{ wch:35 },{ wch:15 },{ wch:12 },
+                    { wch:30 },{ wch:20 },{ wch:12 },{ wch:20 },{ wch:20 },
+                    { wch:30 },{ wch:12 },{ wch:50 }];
+
+    XLSX.utils.book_append_sheet(wb, ws1, 'Data Infokom');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Detail');
+
+    const tgl  = new Date().toISOString().split('T')[0].replace(/-/g,'');
+    XLSX.writeFile(wb, `data_infokom_dqlp_${tgl}.xlsx`);
+    toast(`✓ File Excel berhasil didownload (${dataInfokom.length} data).`);
   }
 
   /* ===== SEMUA PERIODE ===== */
@@ -959,9 +1035,35 @@
       document.getElementById('qTotal').textContent   = d.total   || 0;
       document.getElementById('qPct').textContent     = d.pct     || 0;
       document.getElementById('queueFill').style.width = (d.pct||0) + '%';
-      // Auto refresh kalau masih ada antrian
-      if (d.antrian > 0) setTimeout(() => cekQueue(), 30000);
+
+      const msg = document.getElementById('qStatusMsg');
+      if (d.antrian > 0) {
+        msg.textContent = '⏳ Sedang diproses di background — auto-refresh 30 detik';
+        msg.style.color = 'var(--warning)';
+        setTimeout(() => cekQueue(), 30000);
+      } else if (d.gagal > 0) {
+        msg.textContent = `✓ Selesai — ${d.gagal} gagal, cek sheet QUEUE_SERTIFIKAT untuk detail`;
+        msg.style.color = 'var(--danger)';
+      } else {
+        msg.textContent = '✓ Semua sertifikat berhasil digenerate. Email notifikasi terkirim ke admin.';
+        msg.style.color = 'var(--accent2)';
+      }
     } catch(e) {}
+  }
+
+  function konfirmBatalQueue() {
+    document.getElementById('confirmMsg').textContent = 'Batalkan semua antrian generate background yang sedang berjalan?';
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.getElementById('confirmYes').onclick = async () => {
+      closeConfirm();
+      overlay(true, 'Membatalkan antrian...');
+      try {
+        const d = await api({ action:'batalkan_queue' });
+        overlay(false);
+        toast(d.message || 'Antrian dibatalkan.', d.status === 'ok' ? 'success' : 'error');
+        cekQueue();
+      } catch(e) { overlay(false); toast('Gagal membatalkan.','error'); }
+    };
   }
 
   function renderSemuaTabel(data) {
