@@ -296,13 +296,72 @@
             </div>
             <button onclick="loadPesertaSemua()" class="btn btn-ghost"><i class="fa-solid fa-rotate mr-1"></i>Muat Data</button>
           </div>
-          <div class="flex gap-3">
-            <input type="text" id="qSemua" onkeyup="fSemua()" placeholder="Cari NIP atau Nama..." class="flex-1">
+          <div class="flex gap-3 flex-wrap">
+            <input type="text" id="qSemua" onkeyup="fSemua()" placeholder="Cari NIP atau Nama..." class="flex-1" style="min-width:200px">
+            <select id="filterSkema" onchange="fSemua()" class="w-48">
+              <option value="">Semua Skema</option>
+            </select>
+          </div>
+          <!-- Tombol generate -->
+          <div class="flex gap-3 flex-wrap" id="semuaAksiBtn" style="display:none!important">
             <button id="bulkSemuaBtn" onclick="konfirmBulkSemua()" class="btn btn-success hidden">
-              <i class="fa-solid fa-gears mr-2"></i>Bulk Generate Semua Berhak
+              <i class="fa-solid fa-gears mr-2"></i>Bulk Generate (Browser)
+            </button>
+            <button onclick="bukaModalBackground()" class="btn btn-primary">
+              <i class="fa-solid fa-server mr-2"></i>Generate Background (GAS)
             </button>
           </div>
         </div>
+
+        <!-- Status Queue -->
+        <div id="queueStatus" class="hidden card p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-black uppercase tracking-widest text-white">
+              <i class="fa-solid fa-server mr-2" style="color:var(--accent)"></i>Status Generate Background
+            </h4>
+            <button onclick="cekQueue()" class="btn btn-ghost" style="padding:5px 12px;font-size:10px">
+              <i class="fa-solid fa-rotate mr-1"></i>Refresh
+            </button>
+          </div>
+          <div id="queueBar" class="progress-bar"><div id="queueFill" class="progress-fill" style="width:0%;background:var(--accent2)"></div></div>
+          <div class="flex gap-4 text-xs font-bold flex-wrap">
+            <span style="color:var(--accent2)"><i class="fa-solid fa-circle-check mr-1"></i><span id="qSelesai">0</span> Selesai</span>
+            <span style="color:var(--danger)"><i class="fa-solid fa-circle-xmark mr-1"></i><span id="qGagal">0</span> Gagal</span>
+            <span style="color:var(--warning)"><i class="fa-solid fa-clock mr-1"></i><span id="qAntrian">0</span> Antrian</span>
+            <span style="color:var(--muted)">Total: <span id="qTotal">0</span></span>
+            <span style="color:var(--accent)" class="font-black"><span id="qPct">0</span>%</span>
+          </div>
+        </div>
+
+        <!-- Modal Background Generate -->
+        <div id="modalBg" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.8)">
+          <div class="card p-6 max-w-sm w-full space-y-4">
+            <h3 class="font-black text-white text-sm uppercase tracking-widest">
+              <i class="fa-solid fa-server mr-2" style="color:var(--accent)"></i>Generate Background
+            </h3>
+            <p class="text-xs" style="color:var(--muted)">
+              GAS akan memproses antrian di server tanpa perlu browser terbuka.
+              Setiap batch 10 sertifikat diproses per 2 menit.
+            </p>
+            <div>
+              <label class="text-[10px] font-black uppercase tracking-widest block mb-1.5" style="color:var(--muted)">Filter Skema</label>
+              <select id="bgSkema" class="w-full">
+                <option value="SEMUA">Semua Skema</option>
+              </select>
+            </div>
+            <div class="rounded-xl p-3 text-xs" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);color:#fbbf24">
+              <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+              Proses berjalan di background. Cek status di panel "Status Generate Background".
+            </div>
+            <div class="flex gap-3">
+              <button onclick="document.getElementById('modalBg').classList.add('hidden')" class="btn btn-ghost flex-1">Batal</button>
+              <button onclick="mulaiBackground()" class="btn btn-primary flex-1">
+                <i class="fa-solid fa-play mr-2"></i>Mulai
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div id="semuaInfo" class="hidden"></div>
         <div id="semuaT" class="card overflow-hidden">
           <div class="p-8 text-center text-sm font-bold" style="color:var(--muted)">Klik "Muat Data" untuk memuat semua peserta</div>
@@ -810,9 +869,22 @@
 
   /* ===== SEMUA PERIODE ===== */
   async function loadPesertaSemua() {
-    document.getElementById('semuaT').innerHTML = '<div class="p-10 text-center text-sm animate-pulse" style="color:var(--muted)">Memuat data semua periode... (mungkin 30-60 detik)</div>';
+    document.getElementById('semuaT').innerHTML = '<div class="p-10 text-center text-sm animate-pulse" style="color:var(--muted)">Memuat data semua periode... (30-60 detik)</div>';
     document.getElementById('semuaInfo').classList.add('hidden');
-    document.getElementById('bulkSemuaBtn').classList.add('hidden');
+    document.getElementById('semuaAksiBtn').style.display = 'none';
+
+    // Load daftar skema untuk filter
+    try {
+      const sk = await api({ action:'get_skema_list' });
+      const sel1 = document.getElementById('filterSkema');
+      const sel2 = document.getElementById('bgSkema');
+      sel1.innerHTML = '<option value="">Semua Skema</option>';
+      sel2.innerHTML = '<option value="SEMUA">Semua Skema</option>';
+      (sk || []).forEach(s => {
+        sel1.innerHTML += `<option value="${s}">${s}</option>`;
+        sel2.innerHTML += `<option value="${s}">${s}</option>`;
+      });
+    } catch(e) {}
 
     try {
       const d = await api({ action:'get_peserta_semua', kegiatan:'DQLP' }, 90000);
@@ -822,8 +894,8 @@
       dSemuaFiltered = [...dSemuaAll];
       labelPeriodeGlobal = d.label_periode;
 
-      const totalBoleh   = dSemuaAll.reduce((s,p) => s + p.detail_periode.filter(dp => dp.boleh_generate).length, 0);
-      const totalTerbit  = dSemuaAll.reduce((s,p) => s + p.terbit_count, 0);
+      const totalBoleh  = dSemuaAll.reduce((s,p) => s + p.detail_periode.filter(dp => dp.boleh_generate).length, 0);
+      const totalTerbit = dSemuaAll.reduce((s,p) => s + p.terbit_count, 0);
 
       document.getElementById('semuaInfo').innerHTML = `
         <div class="card p-4 flex items-center gap-6 flex-wrap">
@@ -832,17 +904,64 @@
           <span class="text-sm font-bold" style="color:var(--warning)">${totalBoleh} Siap Generate</span>
         </div>`;
       document.getElementById('semuaInfo').classList.remove('hidden');
+      document.getElementById('semuaAksiBtn').style.display = 'flex';
       if (totalBoleh > 0) document.getElementById('bulkSemuaBtn').classList.remove('hidden');
+      else document.getElementById('bulkSemuaBtn').classList.add('hidden');
 
       renderSemuaTabel(dSemuaFiltered);
+      cekQueue(); // cek apakah ada queue yang sedang berjalan
 
     } catch(e) { toast('Gagal memuat data.','error'); }
   }
 
   function fSemua() {
-    const q = document.getElementById('qSemua').value.toLowerCase();
-    dSemuaFiltered = dSemuaAll.filter(x => String(x.nip||'').toLowerCase().includes(q) || String(x.nama||'').toLowerCase().includes(q));
+    const q  = document.getElementById('qSemua').value.toLowerCase();
+    const sk = document.getElementById('filterSkema').value.toLowerCase();
+    dSemuaFiltered = dSemuaAll.filter(x => {
+      const matchQ  = !q  || String(x.nip||'').toLowerCase().includes(q) || String(x.nama||'').toLowerCase().includes(q);
+      const matchSk = !sk || x.detail_periode.some(dp => String(dp.skema||'').toLowerCase().includes(sk));
+      return matchQ && matchSk;
+    });
     renderSemuaTabel(dSemuaFiltered);
+  }
+
+  /* ===== BACKGROUND GENERATE ===== */
+  function bukaModalBackground() {
+    document.getElementById('modalBg').classList.remove('hidden');
+  }
+
+  async function mulaiBackground() {
+    const skema = document.getElementById('bgSkema').value || 'SEMUA';
+    document.getElementById('modalBg').classList.add('hidden');
+    overlay(true, 'Menyiapkan antrian generate...');
+    try {
+      const d = await api({ action:'mulai_background', kegiatan:'DQLP', skema }, 60000);
+      overlay(false);
+      if (d.status === 'ok') {
+        toast(d.message);
+        document.getElementById('queueStatus').classList.remove('hidden');
+        // Auto refresh setiap 30 detik
+        setTimeout(() => cekQueue(), 30000);
+      } else {
+        toast(d.message || 'Gagal.','error');
+      }
+    } catch(e) { overlay(false); toast('Gagal memulai background generate.','error'); }
+  }
+
+  async function cekQueue() {
+    try {
+      const d = await api({ action:'cek_queue' });
+      if (!d.ada_queue) return;
+      document.getElementById('queueStatus').classList.remove('hidden');
+      document.getElementById('qSelesai').textContent = d.selesai || 0;
+      document.getElementById('qGagal').textContent   = d.gagal   || 0;
+      document.getElementById('qAntrian').textContent = d.antrian || 0;
+      document.getElementById('qTotal').textContent   = d.total   || 0;
+      document.getElementById('qPct').textContent     = d.pct     || 0;
+      document.getElementById('queueFill').style.width = (d.pct||0) + '%';
+      // Auto refresh kalau masih ada antrian
+      if (d.antrian > 0) setTimeout(() => cekQueue(), 30000);
+    } catch(e) {}
   }
 
   function renderSemuaTabel(data) {
