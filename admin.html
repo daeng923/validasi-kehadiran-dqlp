@@ -376,7 +376,9 @@
     const ctrl = new AbortController();
     const id   = setTimeout(() => ctrl.abort(), timeout);
     try {
-      const url = `${API}?${new URLSearchParams({...params, token: TOKEN})}`;
+      // Hanya tambah token global jika params belum punya token sendiri
+      const finalParams = params.token ? params : {...params, token: TOKEN};
+      const url = `${API}?${new URLSearchParams(finalParams)}`;
       const r   = await fetch(url, { signal: ctrl.signal });
       clearTimeout(id);
       return await r.json();
