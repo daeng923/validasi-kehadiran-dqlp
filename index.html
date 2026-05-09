@@ -237,12 +237,13 @@
     const $ = id => document.getElementById(id);
 
     /* ========== FETCH WITH TIMEOUT + RETRY ========== */
-    async function fetchWithTimeout(url, ms = 15000, retries = 1) {
+    // Diperbarui agar bisa menerima method POST
+    async function fetchWithTimeout(url, options = {}, ms = 15000, retries = 1) {
       for (let attempt = 0; attempt <= retries; attempt++) {
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), ms);
         try {
-          const res = await fetch(url, { signal: controller.signal });
+          const res = await fetch(url, { ...options, signal: controller.signal });
           clearTimeout(id);
           return res;
         } catch (err) {
@@ -331,13 +332,9 @@
               Daftar Verifikasi Kosong.
             </div>`;
         } else {
-          // Pisahkan data hadir dan izin
-          // HADIR: hanya status HADIR murni (bukan IZIN dan bukan HADIR_KEBIJAKAN)
           DATA_HADIR = DATA.filter(r => r.status !== 'IZIN' && r.status !== 'HADIR_KEBIJAKAN');
-          // IZIN: status IZIN murni + HADIR_KEBIJAKAN (untuk tracking & batal konversi)
           DATA_IZIN  = DATA.filter(r => r.status === 'IZIN' || r.status === 'HADIR_KEBIJAKAN');
 
-          // Update badge count
           $("badgeHadir").innerText = DATA_HADIR.length;
           $("badgeIzin").innerText  = DATA_IZIN.length;
 
@@ -380,7 +377,6 @@
         renderList(DATA_IZIN);
       }
 
-      // Reset search
       $("searchBox").value = '';
       $("emptyBox").innerHTML = '';
     }
@@ -403,7 +399,6 @@
       }
     }
 
-    // Tab HADIR — tampilan penuh dengan checkbox
     function renderHadir(items) {
       if (items.length === 0) {
         $("list").innerHTML = `
@@ -440,7 +435,6 @@
       }).join("");
     }
 
-    // Tab IZIN — compact accordion, default collapsed
     function renderIzin(items) {
       if (items.length === 0) {
         $("list").innerHTML = `
@@ -668,8 +662,9 @@
     async function simpanData() {
       const sel = [], unsel = [];
       document.querySelectorAll("#list input[type='checkbox']").forEach(cb => {
-        if (cb.checked) sel.push(DATA_HADIR[cb.dataset.i]);
-        else unsel.push(DATA_HADIR[cb.dataset.i]);
+        // OPTIMASI 1: Hanya mengirim properti "row" untuk meminimalkan beban Payload data
+        if (cb.checked) sel.push({ row: DATA_HADIR[cb.dataset.i].row });
+        else unsel.push({ row: DATA_HADIR[cb.dataset.i].row });
       });
 
       const btn = $("btnSave");
@@ -684,7 +679,13 @@
           rows           : JSON.stringify(sel),
           unselectedRows : JSON.stringify(unsel)
         });
-        const r = await fetchWithTimeout(`${API_URL}?${params}`);
+        
+        // OPTIMASI 2: Memanggil API dengan Method POST (Via Body Payload) untuk mengindari batas panjang URL
+        const r = await fetchWithTimeout(API_URL, {
+          method: 'POST',
+          body: params
+        });
+        
         const j = await r.json();
 
         if (!j.status) throw new Error(j.msg);
