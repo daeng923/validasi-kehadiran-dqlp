@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manajemen Presensi Manual DQLP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f1f5f9; }
+    
+    /* Proteksi UI untuk Institusi */
+    .secure-ui { user-select: none; -webkit-user-select: none; }
+    
+    /* Tabel scrollable dinamis */
+    .table-container { overflow-x: auto; max-width: 100%; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+    table { width: max-content; min-width: 100%; border-collapse: collapse; background: white; }
+    th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; vertical-align: middle; }
+    th { background: #f8fafc; font-size: 0.75rem; color: #334155; position: relative; }
+    td.nama-col { text-align: left; position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #cbd5e1; font-weight: 600;}
+    th.nama-col { text-align: left; position: sticky; left: 0; background: #f8fafc; z-index: 11; border-right: 2px solid #cbd5e1;}
+    
+    /* Interaksi Sel Status */
+    .status-cell { cursor: pointer; font-weight: 800; font-size: 1rem; transition: 0.2s; }
+    .status-cell:not(.locked-audit):hover { background: #f1f5f9; }
+    .status-H { color: #059669; }
+    .status-I { color: #d97706; }
+    .status-A { color: #dc2626; }
+    
+    /* Audit Lock Style */
+    .locked-audit { cursor: not-allowed !important; background-color: #f0fdf4; pointer-events: auto; }
+    .locked-audit .lock-icon { font-size: 0.5rem; color: #94a3b8; display: block; line-height: 1; margin-top: 1px; }
+    
+    /* Input Tanggal */
+    .date-input { width: 100%; font-size: 0.65rem; padding: 2px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: #fff; color: #0f172a; margin-top: 4px;}
+    .date-input.active { border-color: #059669; background: #ecfdf5; font-weight: bold; }
+    
+    /* Animasi */
+    .spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #059669; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+  </style>
+</head>
+<body class="secure-ui p-4">
+
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+  <div class="bg-slate-900 text-white p-4 rounded-xl shadow-lg flex flex-wrap items-center gap-4 sticky top-4 z-50 mb-6">
+    <h1 class="text-sm font-extrabold flex-1 uppercase tracking-wider">
+      <i class="fa-solid fa-clipboard-user mr-2 text-emerald-400"></i> DQLP Admin Presensi
+    </h1>
+    
+    <select id="filterSkema" onchange="renderTabel()" class="bg-slate-800 border border-slate-700 text-white px-3 py-2 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500">
+      <option value="">-- Pilih Skema --</option>
+    </select>
+    
+    <button onclick="loadData()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all">
+      <i class="fa-solid fa-rotate mr-1"></i> Muat Data
+    </button>
+    
+    <button id="btnSimpan" onclick="simpanKonfirmasiInstruktur()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-xs font-bold shadow-md transition-all hidden">
+      <i class="fa-solid fa-check-double mr-1"></i> Konfirmasi Manual Instruktur
+    </button>
+  </div>
+
+  <div id="loadingState" class="hidden flex flex-col items-center justify-center p-12">
+    <div class="spinner mb-4"></div>
+    <p class="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">Menghubungkan ke Database...</p>
+  </div>
+  
+  <div id="errorState" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mb-6 max-w-3xl mx-auto">
+    <p class="text-red-700 font-bold text-sm"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Gagal Memuat Data</p>
+    <p id="errorMsg" class="text-red-600 text-xs mt-1"></p>
+  </div>
+
+  <div id="tabelArea" class="hidden">
+    <div class="bg-white p-4 rounded-t-xl border-b border-slate-200">
+      <div class="flex flex-wrap justify-between items-start gap-4">
+        <div>
+          <h2 id="judulSkema" class="text-lg font-extrabold text-slate-800">Nama Skema</h2>
+          <p class="text-xs text-slate-500 font-semibold mt-1">Klik sel untuk mengubah status. Urutan klik: <span class="text-slate-400">kosong</span> → <span class="text-emerald-600 font-extrabold">✓</span> → <span class="text-amber-600 font-extrabold">I</span> → <span class="text-red-600 font-extrabold">A</span> → <span class="text-slate-400">kosong</span></p>
+        </div>
+      </div>
+
+      <!-- Panel Keterangan Simbol -->
+      <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-semibold text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200">
+        <span class="font-extrabold text-slate-800 mr-1"><i class="fa-solid fa-circle-info text-blue-500"></i> Keterangan:</span>
+        <span class="flex items-center gap-1"><span class="inline-block w-6 h-6 rounded bg-white border border-slate-200 text-center leading-6 font-extrabold text-emerald-600">✓</span> Hadir</span>
+        <span class="flex items-center gap-1"><span class="inline-block w-6 h-6 rounded bg-white border border-slate-200 text-center leading-6 font-extrabold text-amber-600">I</span> Izin</span>
+        <span class="flex items-center gap-1"><span class="inline-block w-6 h-6 rounded bg-white border border-slate-200 text-center leading-6 font-extrabold text-red-600">A</span> Alpha / Tidak Hadir</span>
+        <span class="flex items-center gap-1"><span class="inline-block w-6 h-6 rounded bg-white border border-slate-200 text-center leading-6 font-extrabold text-slate-300">-</span> Belum Diisi</span>
+        <span class="flex items-center gap-1"><span class="inline-block w-6 h-6 rounded bg-slate-100 border border-slate-200 text-center leading-6 font-extrabold text-emerald-600 opacity-50"><i class="fa-solid fa-lock text-[9px]"></i></span> Terkunci (Hadir dari Database — tidak dapat diubah)</span>
+      </div>
+    </div>
+    <div class="table-container">
+      <table id="presensiTable">
+        <thead id="tHead"></thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // URL Web App Google Apps Script
+    const API_URL = "https://script.google.com/macros/s/AKfycbwQUUDKhkEIErNFZP4QSl4bNISYuRuU_eYHuLDxGOUNtBxNPrM2CKLirRgyjquVs6uJ/exec";
+    
+    let dbJadwal = [];
+    let dbLogs = [];
+    let currentSkema = null;
+    let pendingUpdates = {}; 
+
+    // Skrip Proteksi Keamanan Institusi
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && [73, 74, 67].includes(e.keyCode)) || (e.ctrlKey && e.keyCode === 85)) { 
+        e.preventDefault(); 
+        return false; 
+      }
+    });
+
+    // Fungsi Notifikasi Toast Dinamis
+    function showToast(msg, type = 'success') {
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-emerald-600' : (type === 'info' ? 'bg-blue-600' : 'bg-red-500');
+      const icon = type === 'success' ? 'fa-circle-check' : (type === 'info' ? 'fa-cloud-arrow-down' : 'fa-triangle-exclamation');
+      
+      toast.className = `${bg} text-white px-5 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-3 animate-fadeIn transition-opacity duration-300`;
+      toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span>${msg}</span>`;
+      
+      document.getElementById('toastContainer').appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3500);
+    }
+
+    // Load Data dari Database
+    async function loadData() {
+      document.getElementById('loadingState').classList.remove('hidden');
+      document.getElementById('errorState').classList.add('hidden');
+      document.getElementById('tabelArea').classList.add('hidden');
+      document.getElementById('btnSimpan').classList.add('hidden');
+      pendingUpdates = {};
+
+      try {
+        const r = await fetch(`${API_URL}?action=admin_data`, { redirect: "follow" });
+        if (!r.ok) throw new Error(`HTTP Error! Status: ${r.status}`);
+        
+        const j = await r.json();
+        if (j.status !== 'ok') throw new Error(j.pesan || "Respons server tidak sesuai.");
+
+        dbJadwal = j.jadwal;
+        dbLogs = j.logs;
+        
+        console.log("Riwayat Log Database:", dbLogs); // Pengecekan via Console
+
+        const sel = document.getElementById('filterSkema');
+        sel.innerHTML = '<option value="">-- Pilih Skema --</option>';
+        dbJadwal.forEach(d => { sel.innerHTML += `<option value="${d.skemaBaru}">${d.namaSkema}</option>`; });
+        
+        showToast("Sinkronisasi database berhasil.", "success");
+
+      } catch(err) {
+        document.getElementById('errorState').classList.remove('hidden');
+        document.getElementById('errorMsg').innerText = err.message;
+      } finally {
+        document.getElementById('loadingState').classList.add('hidden');
+      }
+    }
+
+    // Render Tabel Sesuai Skema
+    function renderTabel() {
+      const skemaVal = document.getElementById('filterSkema').value;
+      if (!skemaVal) {
+        document.getElementById('tabelArea').classList.add('hidden');
+        document.getElementById('btnSimpan').classList.add('hidden');
+        return;
+      }
+
+      currentSkema = dbJadwal.find(d => d.skemaBaru === skemaVal);
+      document.getElementById('judulSkema').innerText = currentSkema.namaSkema;
+      document.getElementById('tabelArea').classList.remove('hidden');
+      document.getElementById('btnSimpan').classList.remove('hidden');
+
+      buildTableHeaders();
+      buildTableBody();
+    }
+
+    // Membangun Header Dinamis (P1 - P14)
+    function buildTableHeaders() {
+      const tHead = document.getElementById('tHead');
+      let thHTML = `<tr>
+        <th class="w-8">No</th>
+        <th class="nama-col w-48">Nama Peserta</th>
+        <th class="w-24">NIP</th>`;
+      
+      for (let i = 1; i <= 14; i++) {
+        thHTML += `
+          <th class="w-16">
+            <div class="font-extrabold text-slate-800">P-${i}</div>
+            <input type="date" id="date_P${i}" class="date-input" onchange="unlockColumn(${i})">
+            <div class="flex gap-1 mt-1 justify-center">
+              <button onclick="bulkHadir(${i})" id="btnBulk_P${i}" class="w-full text-[10px] bg-slate-200 text-slate-500 py-1 rounded opacity-50 cursor-not-allowed" disabled title="Set Hadir Semua">
+                <i class="fa-solid fa-check"></i>
+              </button>
+              <button onclick="bulkReset(${i})" id="btnReset_P${i}" class="w-full text-[10px] bg-slate-200 text-slate-500 py-1 rounded opacity-50 cursor-not-allowed" disabled title="Kosongkan Area Terbuka">
+                <i class="fa-solid fa-eraser"></i>
+              </button>
+            </div>
+          </th>`;
+      }
+      thHTML += `</tr>`;
+      tHead.innerHTML = thHTML;
+    }
+
+    // Membangun Body Tabel dengan Audit Data Property
+    function buildTableBody() {
+      const tBody = document.getElementById('tBody');
+      let trHTML = '';
+
+      currentSkema.peserta.forEach((p, index) => {
+        trHTML += `<tr>
+          <td class="text-xs text-slate-500">${index + 1}</td>
+          <td class="nama-col text-xs text-slate-800">${p.nama}</td>
+          <td class="text-[10px] text-slate-500 font-mono">${p.nip}</td>`;
+        
+        for (let i = 1; i <= 14; i++) {
+          trHTML += `<td id="cell_${p.nip}_P${i}" 
+                         class="status-cell text-slate-300" 
+                         onclick="toggleStatus('${p.nip}', ${i})" 
+                         data-status="" 
+                         data-locked="true"
+                         data-audit-locked="false">-</td>`;
+        }
+        trHTML += `</tr>`;
+      });
+      tBody.innerHTML = trHTML;
+    }
+
+    // Membuka Kunci Kolom dan Memuat Log
+    function unlockColumn(pIndex) {
+      const dateInput = document.getElementById(`date_P${pIndex}`);
+      const bulkBtn = document.getElementById(`btnBulk_P${pIndex}`);
+      const resetBtn = document.getElementById(`btnReset_P${pIndex}`);
+      
+      if (dateInput.value) {
+        dateInput.classList.add('active');
+        
+        // Mengaktifkan Tombol
+        bulkBtn.disabled = false; 
+        resetBtn.disabled = false;
+        bulkBtn.classList.remove('bg-slate-200', 'text-slate-500', 'opacity-50', 'cursor-not-allowed');
+        resetBtn.classList.remove('bg-slate-200', 'text-slate-500', 'opacity-50', 'cursor-not-allowed');
+        
+        bulkBtn.classList.add('bg-emerald-100', 'text-emerald-700', 'hover:bg-emerald-200');
+        resetBtn.classList.add('bg-red-100', 'text-red-700', 'hover:bg-red-200');
+        
+        // Reset cell ke keadaan kosong & tidak terkunci terlebih dahulu sebelum memuat data baru
+        currentSkema.peserta.forEach(p => {
+          const cell = document.getElementById(`cell_${p.nip}_P${pIndex}`);
+          cell.dataset.locked = "false";
+          cell.dataset.auditLocked = "false";
+          cell.classList.remove('locked-audit');
+          cell.title = "";
+          updateCellUI(p.nip, pIndex, '');
+          
+          delete pendingUpdates[`${p.nip}_P${pIndex}`];
+        });
+
+        // Identifikasi Data Presensi yang Ada
+        const loadedCount = loadExistingLogsForColumn(pIndex, dateInput.value);
+        if(loadedCount > 0) {
+          showToast(`Berhasil menarik ${loadedCount} data dari server.`, "info");
+        }
+      }
+    }
+
+    // Pemuat Log dengan Pengecekan Presisi (NIP + Tanggal)
+    // Catatan: Skema tidak digunakan sebagai filter karena kolom E di RAW_PRESENSI
+    // menyimpan 'periodeKegiatan' (dari SETTING_KODE), bukan nama skema (dari Sheet1).
+    // Filter skema sudah implisit karena tabel hanya menampilkan peserta dari skema terpilih.
+    function loadExistingLogsForColumn(pIndex, selectedDate) {
+      let count = 0;
+      
+      const tglCari = String(selectedDate).trim();
+
+      currentSkema.peserta.forEach(p => {
+        const nipCari = String(p.nip).trim();
+
+        // Ambil SEMUA log yang cocok NIP + Tanggal (bisa lebih dari 1 baris)
+        const matches = dbLogs.filter(l => {
+          const logNip = String(l.nip).trim();
+          const logTgl = String(l.tanggal).trim();
+          return (logNip === nipCari) && (logTgl === tglCari);
+        });
+
+        if (matches.length === 0) return;
+
+        // Prioritas: HADIR/VALID > IZIN > TIDAK HADIR. Abaikan status kosong (bekas BATAL).
+        const log = matches.find(l => ['HADIR','VALID','HADIR_KEBIJAKAN'].includes(l.status))
+                 || matches.find(l => l.status === 'IZIN')
+                 || matches.find(l => l.status === 'TIDAK HADIR' || l.status === 'ALPHA')
+                 || null;
+
+        // Jika semua entri berstatus kosong (bekas BATAL), lewati — tidak ditampilkan
+        if (!log || !log.status) return;
+
+        const st = log.status;
+        const s = (st === 'HADIR' || st === 'VALID' || st === 'HADIR_KEBIJAKAN') ? 'H' 
+                : (st === 'IZIN') ? 'I' : 'A';
+        
+        // AUDIT LOCK: Set flag SEBELUM render agar ikon gembok tampil
+        if (s === 'H') {
+          const cell = document.getElementById(`cell_${p.nip}_P${pIndex}`);
+          cell.dataset.auditLocked = "true";
+          cell.title = "Terkunci — Data Hadir dari database tidak dapat diubah";
+        }
+        
+        updateCellUI(p.nip, pIndex, s);
+        count++;
+      });
+      return count;
+    }
+
+    // Toggle Status Per Sel
+    function toggleStatus(nip, pIndex) {
+      const cell = document.getElementById(`cell_${nip}_P${pIndex}`);
+      
+      if (cell.dataset.locked === "true") {
+        alert("Silakan tetapkan tanggal pertemuan di header kolom terlebih dahulu."); return;
+      }
+      if (cell.dataset.auditLocked === "true") {
+        showToast("Riwayat kehadiran ini terkunci secara permanen untuk kebutuhan audit.", "error"); return;
+      }
+
+      let current = cell.dataset.status;
+      let next = current === 'H' ? 'I' : current === 'I' ? 'A' : current === 'A' ? '' : 'H';
+      updateCellUI(nip, pIndex, next);
+      recordChange(nip, pIndex, next);
+    }
+
+    // Set Hadir Masal (Abaikan yang terkunci)
+    function bulkHadir(pIndex) {
+      currentSkema.peserta.forEach(p => {
+        const cell = document.getElementById(`cell_${p.nip}_P${pIndex}`);
+        
+        // Lewati proses jika cell terkunci oleh audit
+        if (cell.dataset.auditLocked === "true") return; 
+
+        if (cell.dataset.status !== 'H' && cell.dataset.status !== 'I') {
+          updateCellUI(p.nip, pIndex, 'H');
+          recordChange(p.nip, pIndex, 'H');
+        }
+      });
+    }
+
+    // Kosongkan Masal (Abaikan yang terkunci)
+    function bulkReset(pIndex) {
+      if(!confirm(`Kosongkan area yang tidak terkunci di pertemuan P-${pIndex}?`)) return;
+      currentSkema.peserta.forEach(p => {
+        const cell = document.getElementById(`cell_${p.nip}_P${pIndex}`);
+        
+        // Lewati proses jika cell terkunci oleh audit
+        if (cell.dataset.auditLocked === "true") return; 
+
+        updateCellUI(p.nip, pIndex, '');
+        recordChange(p.nip, pIndex, '');
+      });
+    }
+
+    // Update UI Sel
+    function updateCellUI(nip, pIndex, status) {
+      const cell = document.getElementById(`cell_${nip}_P${pIndex}`);
+      cell.dataset.status = status;
+      const isLocked = cell.dataset.auditLocked === "true";
+      const auditClass = isLocked ? " locked-audit" : "";
+      cell.className = `status-cell ${status ? 'status-' + status : 'text-slate-300'}` + auditClass;
+      
+      let content = '';
+      if (status === 'H') content = '✓';
+      else if (status === 'I') content = 'I';
+      else if (status === 'A') content = 'A';
+      else content = '-';
+      
+      // Tambahkan ikon gembok untuk sel terkunci
+      if (isLocked) {
+        content += '<span class="lock-icon"><i class="fa-solid fa-lock"></i></span>';
+      }
+      cell.innerHTML = content;
+    }
+
+    // Rekam Perubahan ke Pending State
+    function recordChange(nip, pIndex, status) {
+      const dateVal = document.getElementById(`date_P${pIndex}`).value;
+      const key = `${nip}_P${pIndex}`; 
+      const statusMap = { 'H': 'HADIR', 'I': 'IZIN', 'A': 'ALPHA', '': 'BATAL' };
+      
+      const peserta = currentSkema.peserta.find(p => p.nip === nip);
+      
+      pendingUpdates[key] = {
+        nip: nip,
+        nama: peserta.nama,
+        skema: currentSkema.skemaBaru,
+        tanggal: dateVal, 
+        status: statusMap[status]
+      };
+    }
+
+    // Eksekusi Simpan Data
+    async function simpanKonfirmasiInstruktur() {
+      const updates = Object.values(pendingUpdates);
+      if (updates.length === 0) {
+        showToast("Belum ada perubahan data absensi.", "info"); return;
+      }
+
+      if(!confirm(`Terdapat perubahan pada ${updates.length} sel data. Lanjutkan finalisasi?`)) return;
+
+      const btn = document.getElementById('btnSimpan');
+      btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Menyimpan...';
+      btn.disabled = true;
+
+      try {
+        const payload = JSON.stringify(updates);
+        const r = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ action: 'bulk_simpan', payload: payload }),
+          redirect: 'follow'
+        });
+        
+        if (!r.ok) throw new Error(`HTTP Error! Status: ${r.status}`);
+        const j = await r.json();
+
+        if (j.status === 'SUCCESS') {
+          showToast("Konfirmasi berhasil. Catatan telah difinalisasi.", "success");
+          pendingUpdates = {}; 
+          loadDataSilent();
+        } else {
+          throw new Error(j.pesan);
+        }
+      } catch (err) {
+        showToast("Gagal menyinkronkan ke server.", "error");
+        console.error(err.message);
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-check-double mr-1"></i> Konfirmasi Manual Instruktur';
+        btn.disabled = false;
+      }
+    }
+
+    // Memuat ulang data di latar belakang tanpa mengganggu layar
+    async function loadDataSilent() {
+      try {
+        const r = await fetch(`${API_URL}?action=admin_data`, { redirect: "follow" });
+        const j = await r.json();
+        if (j.status === 'ok') {
+          dbJadwal = j.jadwal;
+          dbLogs = j.logs;
+        }
+      } catch(err) { console.error("Silent load failed."); }
+    }
+  </script>
+</body>
+</html>
