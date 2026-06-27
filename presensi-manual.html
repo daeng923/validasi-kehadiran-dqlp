@@ -13,13 +13,30 @@
     /* Proteksi UI untuk Institusi */
     .secure-ui { user-select: none; -webkit-user-select: none; }
     
-    /* Tabel scrollable dinamis */
-    .table-container { overflow-x: auto; max-width: 100%; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-    table { width: max-content; min-width: 100%; border-collapse: collapse; background: white; }
-    th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; vertical-align: middle; }
-    th { background: #f8fafc; font-size: 0.75rem; color: #334155; position: relative; }
-    td.nama-col { text-align: left; position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #cbd5e1; font-weight: 600;}
-    th.nama-col { text-align: left; position: sticky; left: 0; background: #f8fafc; z-index: 11; border-right: 2px solid #cbd5e1;}
+    /* Tabel scrollable dinamis dengan Freeze Pane (Sticky) */
+    .table-container { 
+      overflow-x: auto; 
+      overflow-y: auto; 
+      max-height: 65vh; /* Batasi tinggi tabel agar memicu scroll vertikal */
+      max-width: 100%; 
+      border-radius: 0.75rem; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+    }
+    
+    /* Penyesuaian border agar tidak hilang saat mode sticky aktif */
+    table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; background: white; }
+    th, td { border-bottom: 1px solid #cbd5e1; border-right: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; vertical-align: middle; }
+    th { border-top: 1px solid #cbd5e1; }
+    td:first-child, th:first-child { border-left: 1px solid #cbd5e1; }
+    
+    /* Freeze Header Atas */
+    th { background: #f8fafc; font-size: 0.75rem; color: #334155; position: sticky; top: 0; z-index: 20; }
+    
+    /* Freeze Kolom Nama (Kiri) */
+    td.nama-col { text-align: left; position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #cbd5e1; font-weight: 600; }
+    
+    /* Perpotongan Freeze Header & Kolom Nama (Pojok Kiri Atas harus memiliki Z-Index tertinggi) */
+    th.nama-col { text-align: left; position: sticky; left: 0; top: 0; background: #f8fafc; z-index: 30; border-right: 2px solid #cbd5e1; }
     
     /* Interaksi Sel Status */
     .status-cell { cursor: pointer; font-weight: 800; font-size: 1rem; transition: 0.2s; }
