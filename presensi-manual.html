@@ -254,6 +254,10 @@
           // Ambil nilai dari atribut data-status
           valA = cellA.dataset.status || '';
           valB = cellB.dataset.status || '';
+        } else if (columnIndex === 0) {
+          // Jika memfilter kolom 'No', gunakan ID baris original sebagai patokan urutan
+          valA = parseInt(a.dataset.originalIndex) || 0;
+          valB = parseInt(b.dataset.originalIndex) || 0;
         } else if (type === 'numeric') {
           // Ambil nilai angka murni
           valA = parseInt(cellA.innerText) || 0;
@@ -269,8 +273,12 @@
         return 0;
       });
 
-      // Terapkan hasil urutan ke dalam DOM tanpa merender ulang seluruh komponen
-      rows.forEach(row => tbody.appendChild(row));
+      // Terapkan hasil urutan ke dalam DOM dan tulis ulang urutan nomor visual
+      rows.forEach((row, index) => {
+        tbody.appendChild(row);
+        // Tulis ulang sel nomor dengan angka berurut (1, 2, 3...)
+        row.cells[0].innerText = index + 1;
+      });
     }
 
     // Membangun Body Tabel dengan Audit Data Property
@@ -279,7 +287,8 @@
       let trHTML = '';
 
       currentSkema.peserta.forEach((p, index) => {
-        trHTML += `<tr>
+        // Menambahkan data-original-index agar sistem mengingat urutan asli sebelum filter
+        trHTML += `<tr data-original-index="${index + 1}">
           <td class="text-xs text-slate-500">${index + 1}</td>
           <td class="nama-col text-xs text-slate-800">${p.nama}</td>
           <td class="text-[10px] text-slate-500 font-mono">${p.nip}</td>`;
